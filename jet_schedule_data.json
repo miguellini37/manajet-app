@@ -1,0 +1,226 @@
+{
+  "users": {
+    "USER001": {
+      "user_id": "USER001",
+      "username": "admin",
+      "password_hash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+      "role": "admin",
+      "related_id": "",
+      "email": "admin@jetmanager.com"
+    },
+    "USER002": {
+      "user_id": "USER002",
+      "username": "johnsmith",
+      "password_hash": "b041c0aeb35bb0fa4aa668ca5a920b590196fdaf9a00eb852c9b7f4d123cc6d6",
+      "role": "customer",
+      "related_id": "CUST001",
+      "email": "john@smithent.com"
+    },
+    "USER003": {
+      "user_id": "USER003",
+      "username": "sarahjohnson",
+      "password_hash": "b041c0aeb35bb0fa4aa668ca5a920b590196fdaf9a00eb852c9b7f4d123cc6d6",
+      "role": "customer",
+      "related_id": "CUST002",
+      "email": "sarah@johnsonaviation.com"
+    },
+    "USER004": {
+      "user_id": "USER004",
+      "username": "pilot_mike",
+      "password_hash": "19c4a83c653042cdb94a36aa5599ecde24631d03019d55085a29d9a6058dc8e9",
+      "role": "crew",
+      "related_id": "CREW002",
+      "email": "mike@jetmanager.com"
+    },
+    "USER005": {
+      "user_id": "USER005",
+      "username": "mechanic_joe",
+      "password_hash": "508e73b4630886f60285340185aa591f1dd3b951e0fc9ac271951c57cbc04bee",
+      "role": "mechanic",
+      "related_id": "",
+      "email": "joe@jetmanager.com"
+    }
+  },
+  "customers": {
+    "CUST001": {
+      "customer_id": "CUST001",
+      "name": "John Smith",
+      "company": "Smith Enterprises",
+      "email": "john@smithent.com",
+      "phone": "+1-555-0101",
+      "address": "123 Business Ave, New York, NY"
+    },
+    "CUST002": {
+      "customer_id": "CUST002",
+      "name": "Sarah Johnson",
+      "company": "Johnson Aviation LLC",
+      "email": "sarah@johnsonaviation.com",
+      "phone": "+1-555-0202",
+      "address": "456 Sky Lane, Miami, FL"
+    }
+  },
+  "passengers": {
+    "1": {
+      "passenger_id": "1",
+      "name": "Bob Jones",
+      "passport_number": "3955235",
+      "nationality": "GERMANY",
+      "passport_expiry": "2025-10-30",
+      "contact": "n/a",
+      "customer_id": ""
+    },
+    "P001": {
+      "passenger_id": "P001",
+      "name": "Robert Robertson",
+      "passport_number": "1243452356",
+      "nationality": "Bermuda",
+      "passport_expiry": "2027-09-09",
+      "contact": "frick@frack.com",
+      "customer_id": ""
+    },
+    "P002": {
+      "passenger_id": "P002",
+      "name": "Alice Williams",
+      "passport_number": "PP1234567",
+      "nationality": "USA",
+      "passport_expiry": "2027-05-15",
+      "contact": "+1-555-2001",
+      "customer_id": "CUST001"
+    },
+    "P003": {
+      "passenger_id": "P003",
+      "name": "Bob Martinez",
+      "passport_number": "PP2345678",
+      "nationality": "USA",
+      "passport_expiry": "2028-08-20",
+      "contact": "+1-555-2002",
+      "customer_id": "CUST001"
+    },
+    "P004": {
+      "passenger_id": "P004",
+      "name": "Carol Thompson",
+      "passport_number": "PP3456789",
+      "nationality": "UK",
+      "passport_expiry": "2029-01-10",
+      "contact": "+44-555-3001",
+      "customer_id": "CUST002"
+    }
+  },
+  "crew": {
+    "CREW001": {
+      "crew_id": "CREW001",
+      "name": "Dave Pilotson",
+      "crew_type": "Pilot",
+      "passport_number": "459359",
+      "nationality": "USA",
+      "passport_expiry": "2099-09-09",
+      "contact": "dave@dave.dave",
+      "license_number": "123450"
+    },
+    "CREW002": {
+      "crew_id": "CREW002",
+      "name": "Captain Mike Anderson",
+      "crew_type": "Pilot",
+      "passport_number": "P12345678",
+      "nationality": "USA",
+      "passport_expiry": "2028-12-31",
+      "contact": "+1-555-1001",
+      "license_number": "ATP-123456"
+    },
+    "CREW003": {
+      "crew_id": "CREW003",
+      "name": "Captain Lisa Chen",
+      "crew_type": "Pilot",
+      "passport_number": "P87654321",
+      "nationality": "USA",
+      "passport_expiry": "2029-06-30",
+      "contact": "+1-555-1002",
+      "license_number": "ATP-789012"
+    },
+    "CREW004": {
+      "crew_id": "CREW004",
+      "name": "Emily Davis",
+      "crew_type": "Cabin Crew",
+      "passport_number": "C11223344",
+      "nationality": "USA",
+      "passport_expiry": "2027-03-15",
+      "contact": "+1-555-1003",
+      "license_number": null
+    },
+    "CREW005": {
+      "crew_id": "CREW005",
+      "name": "Robert Taylor",
+      "crew_type": "Cabin Crew",
+      "passport_number": "C55667788",
+      "nationality": "USA",
+      "passport_expiry": "2028-09-20",
+      "contact": "+1-555-1004",
+      "license_number": null
+    }
+  },
+  "jets": {
+    "N808NX": {
+      "jet_id": "N808NX",
+      "model": "Challenger 350",
+      "tail_number": "N808NX",
+      "capacity": 8,
+      "customer_id": "",
+      "status": "Available"
+    },
+    "JET001": {
+      "jet_id": "JET001",
+      "model": "Gulfstream G650",
+      "tail_number": "N123AB",
+      "capacity": 14,
+      "customer_id": "CUST001",
+      "status": "Available"
+    },
+    "JET002": {
+      "jet_id": "JET002",
+      "model": "Bombardier Global 7500",
+      "tail_number": "N456CD",
+      "capacity": 17,
+      "customer_id": "CUST001",
+      "status": "Available"
+    },
+    "JET003": {
+      "jet_id": "JET003",
+      "model": "Cessna Citation X",
+      "tail_number": "N789EF",
+      "capacity": 12,
+      "customer_id": "CUST002",
+      "status": "Available"
+    }
+  },
+  "flights": {
+    "FL001": {
+      "flight_id": "FL001",
+      "jet_id": "N808NX",
+      "departure": "MMSD",
+      "destination": "KPWK",
+      "departure_time": "2025-10-16T12:15",
+      "arrival_time": "2025-10-16T18:12",
+      "passenger_ids": [
+        "P002",
+        "P003",
+        "P004"
+      ],
+      "crew_ids": [
+        "CREW001",
+        "CREW004"
+      ],
+      "status": "Scheduled"
+    }
+  },
+  "maintenance": {
+    "MAINT001": {
+      "maintenance_id": "MAINT001",
+      "jet_id": "N808NX",
+      "scheduled_date": "2025-10-18",
+      "maintenance_type": "Inspection",
+      "description": "D check",
+      "status": "Scheduled",
+      "completed_date": null
+    }
+  }
+}

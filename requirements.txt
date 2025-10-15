@@ -1,0 +1,17 @@
+# Core dependencies for web deployment
+Flask==3.0.0
+gunicorn==21.2.0
+
+# Optional but recommended
+Flask-CORS==4.0.0  # For API access from different domains
+Flask-Login==0.6.3  # For user authentication
+python-dotenv==1.0.0  # For environment variables
+
+# Database options (choose one based on your needs)
+# SQLite is built into Python, no installation needed
+# psycopg2-binary==2.9.9  # For PostgreSQL
+# pymongo==4.6.0  # For MongoDB
+
+# Development tools
+pytest==7.4.3  # For testing
+black==23.12.1  # For code formatting
