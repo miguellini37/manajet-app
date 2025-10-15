@@ -598,6 +598,29 @@ def view_flight(flight_id):
     flash('Flight not found', 'error')
     return redirect(url_for('flights'))
 
+@app.route('/flights/<flight_id>/trip-sheet')
+@login_required
+def flight_trip_sheet(flight_id):
+    """Generate trip sheet for a flight"""
+    flight = manager.get_flight(flight_id)
+    if not flight:
+        flash('Flight not found', 'error')
+        return redirect(url_for('flights'))
+
+    jet = manager.get_jet(flight.jet_id)
+    passengers = [manager.get_passenger(pid) for pid in flight.passenger_ids if manager.get_passenger(pid)]
+    crew = [manager.get_crew(cid) for cid in flight.crew_ids if manager.get_crew(cid)]
+
+    # Get current timestamp for footer
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    return render_template('trip_sheet.html',
+                         flight=flight,
+                         jet=jet,
+                         passengers=passengers,
+                         crew=crew,
+                         current_time=current_time)
+
 @app.route('/flights/<flight_id>/edit', methods=['GET', 'POST'])
 def edit_flight(flight_id):
     """Edit an existing flight"""
