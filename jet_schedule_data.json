@@ -57,6 +57,14 @@
       "email": "sarah@johnsonaviation.com",
       "phone": "+1-555-0202",
       "address": "456 Sky Lane, Miami, FL"
+    },
+    "CUST003": {
+      "customer_id": "CUST003",
+      "name": "Geoff Gold",
+      "company": "Gold Baboon LLC",
+      "email": "geoffgold@hotmail.kp",
+      "phone": "+18478675309",
+      "address": "700 Frick St, Bhicabgo, IL 60635"
     }
   },
   "passengers": {
@@ -104,6 +112,24 @@
       "passport_expiry": "2029-01-10",
       "contact": "+44-555-3001",
       "customer_id": "CUST002"
+    },
+    "P005": {
+      "passenger_id": "P005",
+      "name": "Geoff Gold",
+      "passport_number": "1800420",
+      "nationality": "USA",
+      "passport_expiry": "2028-09-09",
+      "contact": "+18478675309",
+      "customer_id": ""
+    },
+    "P006": {
+      "passenger_id": "P006",
+      "name": "Mary Ann Gold",
+      "passport_number": "59395923",
+      "nationality": "Canada",
+      "passport_expiry": "2026-10-10",
+      "contact": "+16154920459",
+      "customer_id": ""
     }
   },
   "crew": {
@@ -164,7 +190,7 @@
       "model": "Challenger 350",
       "tail_number": "N808NX",
       "capacity": 8,
-      "customer_id": "",
+      "customer_id": "CUST003",
       "status": "Available"
     },
     "JET001": {
@@ -208,6 +234,24 @@
       "crew_ids": [
         "CREW001",
         "CREW004"
+      ],
+      "status": "Scheduled"
+    },
+    "FL002": {
+      "flight_id": "FL002",
+      "jet_id": "N808NX",
+      "departure": "KJAC",
+      "destination": "KPWK",
+      "departure_time": "2025-10-15T19:30",
+      "arrival_time": "2025-10-15T21:47",
+      "passenger_ids": [
+        "P005",
+        "P006"
+      ],
+      "crew_ids": [
+        "CREW001",
+        "CREW003",
+        "CREW005"
       ],
       "status": "Scheduled"
     }

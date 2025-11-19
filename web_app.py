@@ -621,6 +621,71 @@ def flight_trip_sheet(flight_id):
                          crew=crew,
                          current_time=current_time)
 
+@app.route('/jets/<jet_id>/aircraft-sheet')
+@login_required
+def aircraft_sheet(jet_id):
+    """Generate aircraft information sheet with monthly flights and maintenance"""
+    jet = manager.get_jet(jet_id)
+    if not jet:
+        flash('Aircraft not found', 'error')
+        return redirect(url_for('jets'))
+
+    # Get current date info
+    now = datetime.now()
+    current_year = now.year
+    current_month = now.month
+    month_name = now.strftime('%B')
+
+    # Get customer info
+    customer = manager.get_customer(jet.customer_id) if jet.customer_id else None
+
+    # Filter flights for this month
+    flights_this_month = []
+    for flight in manager.flights.values():
+        if flight.jet_id == jet_id:
+            try:
+                # Parse departure date
+                dep_date_str = flight.departure_time.replace('T', ' ').split()[0]
+                dep_date = datetime.strptime(dep_date_str, '%Y-%m-%d')
+                if dep_date.year == current_year and dep_date.month == current_month:
+                    flights_this_month.append(flight)
+            except:
+                pass
+
+    # Sort flights by departure time
+    flights_this_month.sort(key=lambda f: f.departure_time)
+
+    # Filter maintenance for this month
+    maintenance_this_month = []
+    for maint in manager.maintenance.values():
+        if maint.jet_id == jet_id:
+            try:
+                # Parse scheduled date
+                maint_date = datetime.strptime(maint.scheduled_date, '%Y-%m-%d')
+                if maint_date.year == current_year and maint_date.month == current_month:
+                    maintenance_this_month.append(maint)
+            except:
+                pass
+
+    # Sort maintenance by scheduled date
+    maintenance_this_month.sort(key=lambda m: m.scheduled_date)
+
+    # Estimate flight hours (rough calculation: 1 hour per 500 miles, assume average 1000 miles per flight)
+    flight_hours = len(flights_this_month) * 2  # Simplified estimate
+
+    # Get current timestamp
+    current_time = now.strftime('%Y-%m-%d %H:%M:%S')
+
+    return render_template('aircraft_sheet.html',
+                         jet=jet,
+                         customer=customer,
+                         flights=flights_this_month,
+                         maintenance_records=maintenance_this_month,
+                         current_year=current_year,
+                         month_name=month_name,
+                         flight_hours=flight_hours,
+                         current_time=current_time)
+
 @app.route('/flights/<flight_id>/edit', methods=['GET', 'POST'])
 def edit_flight(flight_id):
     """Edit an existing flight"""
