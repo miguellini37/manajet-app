@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(readlink:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

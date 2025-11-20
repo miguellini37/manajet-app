@@ -9,9 +9,19 @@ from functools import wraps
 from datetime import datetime, timedelta
 import hashlib
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this'  # Change in production!
+
+# Production-ready configuration
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'False') == 'True'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = int(os.environ.get('PERMANENT_SESSION_LIFETIME', '3600'))
 
 # Initialize manager
 manager = JetScheduleManager()
@@ -1125,5 +1135,9 @@ if __name__ == '__main__':
     os.makedirs('static/css', exist_ok=True)
     os.makedirs('static/js', exist_ok=True)
 
-    # Run in development mode
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Get configuration from environment
+    debug = os.environ.get('DEBUG', 'True') == 'True'
+    port = int(os.environ.get('PORT', 5000))
+
+    # Run application
+    app.run(debug=debug, host='0.0.0.0', port=port)
