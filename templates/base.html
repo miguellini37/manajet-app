@@ -706,6 +706,7 @@
         </footer>
     </div>
 
+    <script src="{{ url_for('static', filename='js/search.js') }}"></script>
     <script>
         function toggleMobileMenu() {
             const nav = document.getElementById('mainNav');
@@ -733,6 +734,13 @@
                     !toggle.contains(event.target)) {
                     nav.classList.remove('active');
                 }
+            });
+
+            // Add export buttons to all tables
+            document.querySelectorAll('table').forEach((table, index) => {
+                const pageName = document.title.split('-')[0].trim();
+                const filename = `${pageName.toLowerCase()}_export_${new Date().toISOString().split('T')[0]}.csv`;
+                addExportButton(table, filename);
             });
         });
     </script>
