@@ -3,44 +3,66 @@
 {% block title %}Dashboard - Manajet{% endblock %}
 
 {% block content %}
-<h1>Dashboard</h1>
-<p style="color: var(--gray); margin-bottom: 36px; font-size: 16px;">Welcome back, <strong style="color: var(--dark);">{{ user.username }}</strong> <span style="color: var(--gray-light);">&bull;</span> <span style="text-transform: capitalize; color: var(--primary);">{{ user.role }}</span></p>
+<div style="margin-bottom: 32px;">
+    <h1>Dashboard</h1>
+    <p style="color: #64748b; margin-top: 8px; font-size: 14px;">Welcome back, <strong style="color: #0f172a;">{{ user.username }}</strong> <span style="color: #cbd5e1;">·</span> <span style="text-transform: capitalize; color: var(--primary); font-weight: 600;">{{ user.role }}</span></p>
+</div>
 
 <!-- Stats Overview -->
-<div class="grid-4" style="margin-bottom: 36px;">
-    <div class="card" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border: none; position: relative; overflow: hidden;">
-        <div style="position: absolute; top: -20px; right: -20px; font-size: 100px; opacity: 0.15;">✈️</div>
-        <h3 style="margin-bottom: 16px; font-size: 14px; opacity: 0.95; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Total Aircraft</h3>
-        <div style="font-size: 48px; font-weight: 800; margin-bottom: 12px; letter-spacing: -1px;">{{ stats.total_jets }}</div>
-        <div style="font-size: 15px; opacity: 0.9; font-weight: 500;">
-            <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; display: inline-block;">{{ stats.available_jets }} available</span>
+<div class="grid-4" style="margin-bottom: 32px;">
+    <div class="card" style="border-left: 4px solid #6366f1;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <p style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Total Aircraft</p>
+                <div style="font-size: 36px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">{{ stats.total_jets }}</div>
+                <p style="color: #64748b; font-size: 13px;">
+                    <span style="color: #10b981; font-weight: 600;">{{ stats.available_jets }}</span> available
+                </p>
+            </div>
+            <div style="background: #eef2ff; padding: 12px; border-radius: 12px;">
+                <span style="font-size: 28px;">✈️</span>
+            </div>
         </div>
     </div>
 
-    <div class="card" style="background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); color: white; border: none; position: relative; overflow: hidden;">
-        <div style="position: absolute; top: -20px; right: -20px; font-size: 100px; opacity: 0.15;">🛫</div>
-        <h3 style="margin-bottom: 16px; font-size: 14px; opacity: 0.95; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Active Flights</h3>
-        <div style="font-size: 48px; font-weight: 800; margin-bottom: 12px; letter-spacing: -1px;">{{ stats.active_flights }}</div>
-        <div style="font-size: 15px; opacity: 0.9; font-weight: 500;">
-            <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; display: inline-block;">{{ stats.in_flight_jets }} in flight</span>
+    <div class="card" style="border-left: 4px solid #ec4899;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <p style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Active Flights</p>
+                <div style="font-size: 36px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">{{ stats.active_flights }}</div>
+                <p style="color: #64748b; font-size: 13px;">
+                    <span style="color: #ec4899; font-weight: 600;">{{ stats.in_flight_jets }}</span> in flight
+                </p>
+            </div>
+            <div style="background: #fdf2f8; padding: 12px; border-radius: 12px;">
+                <span style="font-size: 28px;">🛫</span>
+            </div>
         </div>
     </div>
 
-    <div class="card" style="background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%); color: white; border: none; position: relative; overflow: hidden;">
-        <div style="position: absolute; top: -20px; right: -20px; font-size: 100px; opacity: 0.15;">👥</div>
-        <h3 style="margin-bottom: 16px; font-size: 14px; opacity: 0.95; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Passengers</h3>
-        <div style="font-size: 48px; font-weight: 800; margin-bottom: 12px; letter-spacing: -1px;">{{ stats.total_passengers }}</div>
-        <div style="font-size: 15px; opacity: 0.9; font-weight: 500;">
-            <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; display: inline-block;">Registered</span>
+    <div class="card" style="border-left: 4px solid #14b8a6;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <p style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Passengers</p>
+                <div style="font-size: 36px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">{{ stats.total_passengers }}</div>
+                <p style="color: #64748b; font-size: 13px;">Registered</p>
+            </div>
+            <div style="background: #f0fdfa; padding: 12px; border-radius: 12px;">
+                <span style="font-size: 28px;">👥</span>
+            </div>
         </div>
     </div>
 
-    <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%); color: white; border: none; position: relative; overflow: hidden;">
-        <div style="position: absolute; top: -20px; right: -20px; font-size: 100px; opacity: 0.15;">🔧</div>
-        <h3 style="margin-bottom: 16px; font-size: 14px; opacity: 0.95; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Maintenance</h3>
-        <div style="font-size: 48px; font-weight: 800; margin-bottom: 12px; letter-spacing: -1px;">{{ stats.maintenance_jets }}</div>
-        <div style="font-size: 15px; opacity: 0.9; font-weight: 500;">
-            <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; display: inline-block;">Under maintenance</span>
+    <div class="card" style="border-left: 4px solid #f59e0b;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <p style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Maintenance</p>
+                <div style="font-size: 36px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">{{ stats.maintenance_jets }}</div>
+                <p style="color: #64748b; font-size: 13px;">Under maintenance</p>
+            </div>
+            <div style="background: #fffbeb; padding: 12px; border-radius: 12px;">
+                <span style="font-size: 28px;">🔧</span>
+            </div>
         </div>
     </div>
 </div>
@@ -239,42 +261,57 @@
         </div>
 
         <!-- Quick Stats -->
-        <div class="card" style="background: linear-gradient(135deg, var(--gray-lighter) 0%, #e2e8f0 100%); border: 2px solid #e2e8f0;">
+        <div class="card">
             <h2>📊 Quick Stats</h2>
-            <div style="display: grid; gap: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-sm); transition: var(--transition);" onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='var(--shadow-sm)'">
-                    <span style="color: var(--gray); font-weight: 500;">Total Crew</span>
-                    <strong style="font-size: 24px; color: var(--primary);">{{ stats.total_crew }}</strong>
+            <div style="display: grid; gap: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #6366f1;">
+                    <span style="color: #64748b; font-weight: 500; font-size: 14px;">Total Crew</span>
+                    <strong style="font-size: 28px; color: #0f172a;">{{ stats.total_crew }}</strong>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-sm); transition: var(--transition);" onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='var(--shadow-sm)'">
-                    <span style="color: var(--gray); font-weight: 500;">Total Flights</span>
-                    <strong style="font-size: 24px; color: var(--accent);">{{ stats.total_flights }}</strong>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #ec4899;">
+                    <span style="color: #64748b; font-weight: 500; font-size: 14px;">Total Flights</span>
+                    <strong style="font-size: 28px; color: #0f172a;">{{ stats.total_flights }}</strong>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-sm); transition: var(--transition);" onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='var(--shadow-sm)'">
-                    <span style="color: var(--gray); font-weight: 500;">Maintenance Records</span>
-                    <strong style="font-size: 24px; color: var(--warning);">{{ stats.total_maintenance }}</strong>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #f59e0b;">
+                    <span style="color: #64748b; font-weight: 500; font-size: 14px;">Maintenance Records</span>
+                    <strong style="font-size: 28px; color: #0f172a;">{{ stats.total_maintenance }}</strong>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Automatic Status Updates (Admin Only) -->
+{% if user.role == 'admin' %}
+<div class="card" style="margin-top: 32px; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border-left: 4px solid #6366f1;">
+    <h2 style="color: #4338ca; border-bottom: none; padding-bottom: 0;">🔄 Automatic Status Updates</h2>
+    <p style="color: #64748b; margin-bottom: 20px; font-size: 14px;">
+        Flights and maintenance records automatically update their status based on time. System checks every 5 minutes.
+    </p>
+    <div style="display: flex; gap: 12px;">
+        <form method="POST" action="{{ url_for('manual_status_update') }}" style="display: inline;">
+            <button type="submit" class="btn btn-primary">🔄 Update All Statuses Now</button>
+        </form>
+        <a href="{{ url_for('upcoming_events') }}" class="btn btn-secondary">📅 View Upcoming Events</a>
+    </div>
+</div>
+{% endif %}
+
 <!-- Quick Actions -->
-<div class="card" style="margin-top: 36px; background: linear-gradient(135deg, var(--dark) 0%, var(--dark-light) 100%); color: white; border: none; position: relative; overflow: hidden;">
-    <div style="position: absolute; top: -50px; right: -50px; font-size: 200px; opacity: 0.05;">⚡</div>
-    <h2 style="color: white; position: relative; z-index: 1;">⚡ Quick Actions</h2>
-    <div class="grid-4" style="position: relative; z-index: 1;">
+<div class="card" style="margin-top: 32px;">
+    <h2>⚡ Quick Actions</h2>
+    <div class="grid-4">
         {% if user.role in ['customer', 'admin'] %}
-        <a href="{{ url_for('add_passenger') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">➕ Add Passenger</a>
+        <a href="{{ url_for('add_passenger') }}" class="btn btn-primary">➕ Add Passenger</a>
         {% endif %}
-        <a href="{{ url_for('add_flight') }}" class="btn btn-success" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">✈️ Schedule Flight</a>
+        <a href="{{ url_for('add_flight') }}" class="btn btn-success">✈️ Schedule Flight</a>
         {% if user.role in ['admin', 'crew', 'mechanic'] %}
-        <a href="{{ url_for('add_maintenance') }}" class="btn btn-secondary" style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);">🔧 Schedule Maintenance</a>
+        <a href="{{ url_for('add_maintenance') }}" class="btn btn-secondary">🔧 Schedule Maintenance</a>
         {% endif %}
         {% if user.role == 'admin' %}
-        <a href="{{ url_for('customers') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);">👥 Manage Customers</a>
+        <a href="{{ url_for('customers') }}" class="btn btn-primary">👥 Manage Customers</a>
         {% endif %}
-        <a href="{{ url_for('jets') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);">🛩️ View All Aircraft</a>
+        <a href="{{ url_for('jets') }}" class="btn btn-primary">🛩️ View All Aircraft</a>
     </div>
 </div>
 

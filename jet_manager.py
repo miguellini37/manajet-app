@@ -135,16 +135,38 @@ class Passenger:
 
 
 class PrivateJet:
-    """Represents a private jet with its specifications"""
+    """Represents a private jet with its specifications - supports multiple customer ownership"""
 
     def __init__(self, jet_id: str, model: str, tail_number: str,
-                 capacity: int, customer_id: str, status: str = "Available"):
+                 capacity: int, customer_id: str = "", status: str = "Available"):
         self.jet_id = jet_id
         self.model = model
         self.tail_number = tail_number
         self.capacity = capacity
-        self.customer_id = customer_id
+        # Support both single customer_id (string) and multiple (list) for backwards compatibility
+        if isinstance(customer_id, list):
+            self.customer_ids = customer_id
+        elif customer_id:
+            # Convert single customer_id to list
+            self.customer_ids = [customer_id]
+        else:
+            self.customer_ids = []
         self.status = status  # Available, In Flight, Maintenance
+
+    # Legacy property for backward compatibility
+    @property
+    def customer_id(self):
+        """Returns first customer ID or empty string (for backward compatibility)"""
+        return self.customer_ids[0] if self.customer_ids else ""
+
+    @customer_id.setter
+    def customer_id(self, value):
+        """Set single customer (for backward compatibility)"""
+        if value:
+            if value not in self.customer_ids:
+                self.customer_ids.append(value)
+        else:
+            self.customer_ids = []
 
     def to_dict(self) -> Dict:
         return {
@@ -152,26 +174,30 @@ class PrivateJet:
             'model': self.model,
             'tail_number': self.tail_number,
             'capacity': self.capacity,
-            'customer_id': self.customer_id,
+            'customer_ids': self.customer_ids,  # New: list of customers
+            'customer_id': self.customer_ids[0] if self.customer_ids else "",  # Legacy support
             'status': self.status
         }
 
     @classmethod
     def from_dict(cls, data: Dict):
+        # Support both old format (customer_id) and new format (customer_ids)
+        customer_id = data.get('customer_ids', data.get('customer_id', ''))
         return cls(
             data['jet_id'],
             data['model'],
             data['tail_number'],
             data['capacity'],
-            data.get('customer_id', ''),  # Backwards compatibility
+            customer_id,  # Can be string or list
             data.get('status', 'Available')
         )
 
     def __str__(self) -> str:
+        customer_str = ", ".join(self.customer_ids) if self.customer_ids else "Unassigned"
         return (f"Jet: {self.model} (ID: {self.jet_id})\n"
                 f"  Tail Number: {self.tail_number}\n"
                 f"  Capacity: {self.capacity} passengers\n"
-                f"  Customer ID: {self.customer_id}\n"
+                f"  Owners: {customer_str}\n"
                 f"  Status: {self.status}")
 
 

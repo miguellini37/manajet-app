@@ -74,7 +74,7 @@
 
 <!-- Associated Aircraft -->
 <div class="card" style="margin-top: 30px;">
-    <h2>Associated Aircraft</h2>
+    <h2>Associated Aircraft <span style="color: #10b981; font-size: 14px;">(✓ Supports Shared Ownership)</span></h2>
     {% if customer_jets %}
         <div class="table-responsive">
             <table>
@@ -84,6 +84,7 @@
                         <th>Model</th>
                         <th>Tail Number</th>
                         <th>Capacity</th>
+                        <th>Co-Owners</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -95,6 +96,27 @@
                         <td>{{ jet.model }}</td>
                         <td>{{ jet.tail_number }}</td>
                         <td>{{ jet.capacity }} passengers</td>
+                        <td>
+                            {% set other_owners = [] %}
+                            {% for cid in jet.customer_ids %}
+                                {% if cid != customer.customer_id %}
+                                    {% set co_owner = manager.get_customer(cid) %}
+                                    {% if co_owner %}
+                                        {% set _ = other_owners.append(co_owner.name) %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if other_owners|length > 0 %}
+                                <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">
+                                    🤝 SHARED
+                                </span>
+                                <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                                    with {{ other_owners|join(', ') }}
+                                </div>
+                            {% else %}
+                                <span style="color: #888;">—</span>
+                            {% endif %}
+                        </td>
                         <td><span class="status-badge status-{{ jet.status.lower().replace(' ', '-') }}">{{ jet.status }}</span></td>
                         <td>
                             <form method="POST" action="{{ url_for('unassign_jet_from_customer', customer_id=customer.customer_id, jet_id=jet.jet_id) }}" style="display: inline;">
@@ -112,23 +134,36 @@
         <p style="color: #888; text-align: center; padding: 20px;">No aircraft assigned to this customer</p>
     {% endif %}
 
-    {% if unassigned_jets %}
     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
-        <h3 style="margin-bottom: 15px;">Assign New Aircraft</h3>
+        <h3 style="margin-bottom: 15px;">Assign Aircraft (Including Shared)</h3>
+        <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
+            You can assign any aircraft, even those already owned by other customers for shared ownership.
+        </p>
         <form method="POST" action="{{ url_for('assign_jet_to_customer', customer_id=customer.customer_id) }}" style="display: flex; gap: 10px; align-items: end;">
             <div class="form-group" style="flex: 1; margin-bottom: 0;">
                 <label for="jet_id">Select Aircraft to Assign</label>
                 <select name="jet_id" id="jet_id" required>
                     <option value="">-- Choose Aircraft --</option>
-                    {% for jet in unassigned_jets %}
-                        <option value="{{ jet.jet_id }}">{{ jet.model }} ({{ jet.tail_number }}) - {{ jet.status }}</option>
+                    {% for jet in manager.jets.values() %}
+                        {% if customer.customer_id not in jet.customer_ids %}
+                            {% set owner_names = [] %}
+                            {% for cid in jet.customer_ids %}
+                                {% set owner = manager.get_customer(cid) %}
+                                {% if owner %}
+                                    {% set _ = owner_names.append(owner.name) %}
+                                {% endif %}
+                            {% endfor %}
+                            <option value="{{ jet.jet_id }}">
+                                {{ jet.model }} ({{ jet.tail_number }})
+                                {% if owner_names|length > 0 %} - Shared with: {{ owner_names|join(', ') }}{% else %} - Unassigned{% endif %}
+                            </option>
+                        {% endif %}
                     {% endfor %}
                 </select>
             </div>
             <button type="submit" class="btn btn-success">Assign Aircraft</button>
         </form>
     </div>
-    {% endif %}
 </div>
 
 <!-- Associated Passengers -->

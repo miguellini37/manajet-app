@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Upcoming Events{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>📅 Upcoming Events</h1>
+    <p>Events in the next {{ hours }} hours</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>✈️ Upcoming Flights</h2>
+        <span class="badge">{{ upcoming.flights|length }} flights</span>
+    </div>
+    <div class="card-body">
+        {% if upcoming.flights %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Flight ID</th>
+                    <th>Route</th>
+                    <th>Departure Time</th>
+                    <th>Hours Until</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for flight in upcoming.flights %}
+                <tr>
+                    <td><strong>{{ flight.flight_id }}</strong></td>
+                    <td>{{ flight.departure }} → {{ flight.destination }}</td>
+                    <td>{{ flight.time }}</td>
+                    <td>
+                        <span class="badge {% if flight.hours_until <= 2 %}badge-danger{% elif flight.hours_until <= 6 %}badge-warning{% else %}badge-success{% endif %}">
+                            {{ flight.hours_until }}h
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">No upcoming flights in the next {{ hours }} hours</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>🔧 Upcoming Maintenance</h2>
+        <span class="badge">{{ upcoming.maintenance|length }} scheduled</span>
+    </div>
+    <div class="card-body">
+        {% if upcoming.maintenance %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Maintenance ID</th>
+                    <th>Aircraft</th>
+                    <th>Type</th>
+                    <th>Scheduled Time</th>
+                    <th>Hours Until</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for maint in upcoming.maintenance %}
+                <tr>
+                    <td><strong>{{ maint.maintenance_id }}</strong></td>
+                    <td>{{ maint.jet_id }}</td>
+                    <td>{{ maint.type }}</td>
+                    <td>{{ maint.time }}</td>
+                    <td>
+                        <span class="badge {% if maint.hours_until <= 2 %}badge-danger{% elif maint.hours_until <= 6 %}badge-warning{% else %}badge-success{% endif %}">
+                            {{ maint.hours_until }}h
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">No upcoming maintenance in the next {{ hours }} hours</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="form-actions">
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">← Back to Dashboard</a>
+    <form method="POST" action="{{ url_for('manual_status_update') }}" style="display: inline;">
+        <button type="submit" class="btn btn-primary">🔄 Update All Statuses Now</button>
+    </form>
+</div>
+
+<style>
+.badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-success {
+    background: #10b981;
+    color: white;
+}
+
+.badge-warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.badge-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+</style>
+{% endblock %}

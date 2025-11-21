@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import hashlib
 import os
 from dotenv import load_dotenv
+from status_updater import create_scheduled_task
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +26,9 @@ app.config['PERMANENT_SESSION_LIFETIME'] = int(os.environ.get('PERMANENT_SESSION
 
 # Initialize manager
 manager = JetScheduleManager()
+
+# Initialize automatic status updater (runs every 5 minutes)
+status_updater = create_scheduled_task(manager, interval_minutes=5)
 
 # ====================
 # AUTH HELPERS
@@ -68,14 +72,23 @@ def get_current_user():
     return None
 
 def filter_by_customer(items, customer_field='customer_id'):
-    """Filter items by customer for customer role users"""
+    """Filter items by customer for customer role users - supports shared jets"""
     user = get_current_user()
     if not user:
         return []
 
     if user.role == 'customer':
-        # Customer users only see their own data
-        return [item for item in items if getattr(item, customer_field, None) == user.related_id]
+        # Customer users see their own data
+        filtered = []
+        for item in items:
+            # For jets with multiple owners (customer_ids list)
+            if hasattr(item, 'customer_ids'):
+                if user.related_id in item.customer_ids:
+                    filtered.append(item)
+            # For other items with single customer_id
+            elif getattr(item, customer_field, None) == user.related_id:
+                filtered.append(item)
+        return filtered
     elif user.role in ['crew', 'mechanic']:
         # Crew and mechanics see all data
         return list(items)
@@ -83,6 +96,17 @@ def filter_by_customer(items, customer_field='customer_id'):
         # Admin sees everything
         return list(items)
     return []
+
+# ====================
+# AUTOMATIC STATUS UPDATES
+# ====================
+
+@app.before_request
+def auto_update_statuses():
+    """Run automatic status updates before each request if interval has passed"""
+    # Skip for static files and login/logout to avoid unnecessary processing
+    if request.endpoint and request.endpoint not in ['static', 'login', 'logout']:
+        status_updater.run_if_needed()
 
 # ====================
 # AUTH ROUTES
@@ -543,8 +567,9 @@ def add_flight():
             flash(f'WARNING: Aircraft has scheduled maintenance ({maintenance_details.maintenance_type}) on {maintenance_details.scheduled_date}. Flight scheduling requires override.', 'warning')
 
             # Re-render form with maintenance warning
+            # CHANGE: Customers can see ALL jets for cross-customer bookings
             if user.role == 'customer':
-                available_jets = filter_by_customer(manager.jets.values())
+                available_jets = list(manager.jets.values())  # All jets visible for booking
                 available_passengers = filter_by_customer(manager.passengers.values())
             else:
                 available_jets = list(manager.jets.values())
@@ -580,8 +605,10 @@ def add_flight():
             flash('Error scheduling flight - check crew requirements (need at least 1 pilot)', 'error')
 
     # Filter data based on user role
+    # CHANGE: Customers can now see ALL jets for cross-customer bookings
+    # but only their own passengers
     if user.role == 'customer':
-        available_jets = filter_by_customer(manager.jets.values())
+        available_jets = list(manager.jets.values())  # All jets visible for booking
         available_passengers = filter_by_customer(manager.passengers.values())
     else:
         available_jets = list(manager.jets.values())
@@ -763,10 +790,10 @@ def maintenance():
     """List all maintenance records"""
     user = get_current_user()
 
-    # Filter maintenance by user role
+    # Filter maintenance by user role (updated for shared jets)
     if user.role == 'customer':
-        # Customers see only maintenance for their aircraft
-        customer_jets = [j.jet_id for j in manager.jets.values() if j.customer_id == user.related_id]
+        # Customers see maintenance for their aircraft (including shared jets)
+        customer_jets = [j.jet_id for j in manager.jets.values() if user.related_id in j.customer_ids]
         maintenance_list = [m for m in manager.maintenance.values() if m.jet_id in customer_jets]
     else:
         # Admin, crew, mechanics see all maintenance
@@ -876,10 +903,10 @@ def customers():
     user = get_current_user()
     customer_list = list(manager.customers.values())
 
-    # Get counts for each customer
+    # Get counts for each customer (updated for shared jets)
     customer_stats = {}
     for customer in customer_list:
-        jets_count = len([j for j in manager.jets.values() if j.customer_id == customer.customer_id])
+        jets_count = len([j for j in manager.jets.values() if customer.customer_id in j.customer_ids])
         passengers_count = len([p for p in manager.passengers.values() if p.customer_id == customer.customer_id])
         customer_stats[customer.customer_id] = {
             'jets': jets_count,
@@ -923,11 +950,12 @@ def view_customer(customer_id):
         return redirect(url_for('customers'))
 
     # Get all jets and passengers for this customer
-    customer_jets = [j for j in manager.jets.values() if j.customer_id == customer_id]
+    # Updated to support shared jet ownership
+    customer_jets = [j for j in manager.jets.values() if customer_id in j.customer_ids]
     customer_passengers = [p for p in manager.passengers.values() if p.customer_id == customer_id]
 
     # Get all available jets and passengers (not assigned to any customer)
-    unassigned_jets = [j for j in manager.jets.values() if not j.customer_id or j.customer_id == '']
+    unassigned_jets = [j for j in manager.jets.values() if len(j.customer_ids) == 0]
     unassigned_passengers = [p for p in manager.passengers.values() if not p.customer_id or p.customer_id == '']
 
     # Get user account for this customer
@@ -988,7 +1016,7 @@ def delete_customer(customer_id):
 @app.route('/customers/<customer_id>/assign-jet', methods=['POST'])
 @role_required('admin')
 def assign_jet_to_customer(customer_id):
-    """Assign a jet to a customer"""
+    """Assign a jet to a customer - supports shared ownership"""
     jet_id = request.form.get('jet_id')
     jet = manager.get_jet(jet_id)
     customer = manager.get_customer(customer_id)
@@ -997,26 +1025,38 @@ def assign_jet_to_customer(customer_id):
         flash('Jet or customer not found', 'error')
         return redirect(url_for('view_customer', customer_id=customer_id))
 
-    # Update jet's customer_id
-    jet.customer_id = customer_id
-    manager.save_data()
-    flash(f'Jet {jet_id} assigned to {customer.name}', 'success')
+    # Add customer to jet's customer list (shared ownership)
+    if customer_id not in jet.customer_ids:
+        jet.customer_ids.append(customer_id)
+        manager.save_data()
+        flash(f'Jet {jet_id} ({jet.model}) assigned to {customer.name}. This jet is now shared with {len(jet.customer_ids)} customer(s).', 'success')
+    else:
+        flash(f'Jet {jet_id} is already assigned to {customer.name}', 'info')
+
     return redirect(url_for('view_customer', customer_id=customer_id))
 
 @app.route('/customers/<customer_id>/unassign-jet/<jet_id>', methods=['POST'])
 @role_required('admin')
 def unassign_jet_from_customer(customer_id, jet_id):
-    """Unassign a jet from a customer"""
+    """Unassign a jet from a customer - supports shared ownership"""
     jet = manager.get_jet(jet_id)
 
     if not jet:
         flash('Jet not found', 'error')
         return redirect(url_for('view_customer', customer_id=customer_id))
 
-    # Remove customer association
-    jet.customer_id = ''
-    manager.save_data()
-    flash(f'Jet {jet_id} unassigned from customer', 'success')
+    # Remove this customer from jet's customer list
+    if customer_id in jet.customer_ids:
+        jet.customer_ids.remove(customer_id)
+        manager.save_data()
+        remaining = len(jet.customer_ids)
+        if remaining > 0:
+            flash(f'Jet {jet_id} unassigned from this customer. Still shared with {remaining} other customer(s).', 'success')
+        else:
+            flash(f'Jet {jet_id} fully unassigned (no owners)', 'success')
+    else:
+        flash(f'Jet {jet_id} was not assigned to this customer', 'info')
+
     return redirect(url_for('view_customer', customer_id=customer_id))
 
 @app.route('/customers/<customer_id>/assign-passenger', methods=['POST'])
@@ -1112,6 +1152,31 @@ def api_stats():
         'active_flights': len([f for f in manager.flights.values() if f.status == 'In Progress']),
         'available_jets': len([j for j in manager.jets.values() if j.status == 'Available']),
     })
+
+# ====================
+# ADMIN STATUS UPDATE ROUTE
+# ====================
+
+@app.route('/admin/update-statuses', methods=['POST'])
+@role_required('admin')
+def manual_status_update():
+    """Manually trigger status update (admin only)"""
+    result = status_updater.updater.update_all_statuses()
+    flash(f"✅ Updated {result['flights_updated']} flights and {result['maintenance_updated']} maintenance records", 'success')
+    return redirect(url_for('index'))
+
+@app.route('/admin/upcoming-events')
+@role_required('admin')
+def upcoming_events():
+    """View upcoming events in the next 24 hours (admin only)"""
+    user = get_current_user()
+    hours = int(request.args.get('hours', 24))
+    upcoming = status_updater.updater.get_upcoming_events(hours)
+
+    return render_template('upcoming_events.html',
+                         upcoming=upcoming,
+                         hours=hours,
+                         user=user)
 
 # ====================
 # ERROR HANDLERS

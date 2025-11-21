@@ -5,7 +5,7 @@
 <table>
     <thead>
         <tr>
-            <th>ID</th><th>Model</th><th>Tail Number</th><th>Capacity</th><th>Status</th><th>Actions</th>
+            <th>ID</th><th>Model</th><th>Tail Number</th><th>Capacity</th><th>Owners</th><th>Status</th><th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -15,6 +15,25 @@
             <td>{{ jet.model }}</td>
             <td>{{ jet.tail_number }}</td>
             <td>{{ jet.capacity }}</td>
+            <td>
+                {% if jet.customer_ids|length > 0 %}
+                    {% for customer_id in jet.customer_ids %}
+                        {% set customer = manager.get_customer(customer_id) %}
+                        {% if customer %}
+                            <span class="badge" style="background: #6366f1; color: white; padding: 4px 8px; border-radius: 4px; margin-right: 4px; font-size: 12px;">
+                                {{ customer.name }}
+                            </span>
+                        {% endif %}
+                    {% endfor %}
+                    {% if jet.customer_ids|length > 1 %}
+                        <span class="badge" style="background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                            SHARED
+                        </span>
+                    {% endif %}
+                {% else %}
+                    <span style="color: #888;">Unassigned</span>
+                {% endif %}
+            </td>
             <td><span class="status-badge status-{{ jet.status.lower().replace(' ', '-') }}">{{ jet.status }}</span></td>
             <td>
                 <a href="{{ url_for('view_jet', jet_id=jet.jet_id) }}" class="btn btn-primary">View Schedule</a>

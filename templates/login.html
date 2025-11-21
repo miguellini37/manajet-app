@@ -4,11 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Manajet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            background-image:
+                radial-gradient(at 40% 20%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, rgba(139, 92, 246, 0.08) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, rgba(236, 72, 153, 0.08) 0px, transparent 50%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -17,59 +24,85 @@
         }
         .login-container {
             background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 48px 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            border: 1px solid #e2e8f0;
         }
         h1 {
             text-align: center;
-            color: #333;
-            margin-bottom: 30px;
+            color: #0f172a;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 32px;
+            font-size: 14px;
         }
         .form-group {
             margin-bottom: 20px;
         }
         label {
             display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: 500;
+            margin-bottom: 8px;
+            color: #0f172a;
+            font-weight: 600;
+            font-size: 14px;
         }
         input {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px; /* Prevents zoom on iOS */
+            padding: 11px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1e293b;
+            font-family: inherit;
+            transition: all 0.2s;
         }
         input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+        }
+        input::placeholder {
+            color: #94a3b8;
         }
         .btn {
             width: 100%;
-            padding: 12px;
-            background: #667eea;
+            padding: 13px;
+            background: #6366f1;
             color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            margin-top: 10px;
+            margin-top: 8px;
+            transition: all 0.2s;
         }
         .btn:hover {
-            background: #5568d3;
+            background: #4f46e5;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
         }
         .register-link {
             text-align: center;
-            margin-top: 20px;
-            color: #666;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 14px;
         }
         .register-link a {
-            color: #667eea;
+            color: #6366f1;
             text-decoration: none;
             font-weight: 600;
         }
@@ -77,19 +110,26 @@
             text-decoration: underline;
         }
         .flash {
-            padding: 12px;
-            margin-bottom: 20px;
-            border-radius: 5px;
+            padding: 14px 16px;
+            margin-bottom: 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
         }
         .flash.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
         }
         .flash.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .logo {
+            text-align: center;
+            font-size: 42px;
+            margin-bottom: 16px;
         }
 
         /* Mobile responsive */
@@ -122,7 +162,9 @@
 </head>
 <body>
     <div class="login-container">
-        <h1>✈️ Manajet</h1>
+        <div class="logo">✈️</div>
+        <h1>Manajet</h1>
+        <p class="subtitle">Private Jet Schedule Management</p>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -135,17 +177,17 @@
         <form method="POST">
             <div class="form-group">
                 <label>Username</label>
-                <input type="text" name="username" required autofocus>
+                <input type="text" name="username" placeholder="Enter your username" required autofocus>
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" name="password" required>
+                <input type="password" name="password" placeholder="Enter your password" required>
             </div>
-            <button type="submit" class="btn">Log In</button>
+            <button type="submit" class="btn">Sign In</button>
         </form>
 
         <div class="register-link">
-            Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
+            Don't have an account? <a href="{{ url_for('register') }}">Create account</a>
         </div>
     </div>
 </body>
