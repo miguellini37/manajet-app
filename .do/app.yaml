@@ -43,10 +43,8 @@ services:
   routes:
   - path: /
 
-# Optional: Add managed database (PostgreSQL)
-# databases:
-# - name: manajet-db
-#   engine: PG
-#   version: "15"
-#   production: false
-#   cluster_name: manajet-cluster
+databases:
+- name: db
+  engine: PG
+  version: "15"
+  production: false  # Set to true for production (higher cost but better performance)
