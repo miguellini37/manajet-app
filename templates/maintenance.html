@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Maintenance Records</h1>
+
+{% if user.role in ['admin', 'crew', 'mechanic'] %}
+<a href="{{ url_for('add_maintenance') }}" class="btn btn-primary" style="margin-bottom: 20px;">🔧 Schedule Maintenance</a>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th><th>Aircraft</th><th>Type</th><th>Scheduled Date</th><th>Description</th><th>Status</th><th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for maint in maintenance %}
+        <tr>
+            <td>{{ maint.maintenance_id }}</td>
+            <td>{{ maint.jet_id }}</td>
+            <td>{{ maint.maintenance_type }}</td>
+            <td>{{ maint.scheduled_date }}</td>
+            <td>{{ maint.description[:50] }}...</td>
+            <td><span class="status-badge status-{{ maint.status.lower().replace(' ', '-') }}">{{ maint.status }}</span></td>
+            <td>
+                <a href="{{ url_for('view_maintenance', maintenance_id=maint.maintenance_id) }}" class="btn btn-primary">View</a>
+                {% if user.role in ['admin', 'crew', 'mechanic'] %}
+                <a href="{{ url_for('edit_maintenance', maintenance_id=maint.maintenance_id) }}" class="btn btn-success">Edit</a>
+                {% endif %}
+                {% if user.role in ['admin', 'mechanic'] %}
+                <form method="POST" action="{{ url_for('delete_maintenance', maintenance_id=maint.maintenance_id) }}" style="display:inline;" onsubmit="return confirm('Delete this maintenance record?');">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

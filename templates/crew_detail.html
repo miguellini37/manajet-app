@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="{{ url_for('crew') }}" class="btn btn-secondary" style="margin-bottom: 20px;">← Back to Crew</a>
+<div class="card">
+    <h1>{{ crew.name }}</h1>
+    <div style="margin-top: 20px;">
+        <p><strong>Crew ID:</strong> {{ crew.crew_id }}</p>
+        <p><strong>Type:</strong> <span class="status-badge {% if crew.crew_type == 'Pilot' %}status-in-progress{% else %}status-available{% endif %}">{{ crew.crew_type }}</span></p>
+        {% if crew.license_number %}
+        <p><strong>License Number:</strong> {{ crew.license_number }}</p>
+        {% endif %}
+        <p><strong>Passport Number:</strong> {{ crew.passport_number }}</p>
+        <p><strong>Nationality:</strong> {{ crew.nationality }}</p>
+        <p><strong>Passport Expiry:</strong> {{ crew.passport_expiry }}</p>
+        <p><strong>Contact:</strong> {{ crew.contact }}</p>
+    </div>
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('edit_crew', crew_id=crew.crew_id) }}" class="btn btn-success">Edit Crew Member</a>
+        <form method="POST" action="{{ url_for('delete_crew', crew_id=crew.crew_id) }}" style="display:inline;" onsubmit="return confirm('Delete this crew member? This cannot be undone.');">
+            <button type="submit" class="btn btn-danger">Delete Crew Member</button>
+        </form>
+    </div>
+</div>
+
+{% if flights %}
+<div class="card" style="margin-top: 20px;">
+    <h2>Assigned Flights</h2>
+    <table>
+        <thead>
+            <tr><th>Flight ID</th><th>Route</th><th>Departure</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+            {% for flight in flights %}
+            <tr>
+                <td>{{ flight.flight_id }}</td>
+                <td>{{ flight.departure }} → {{ flight.destination }}</td>
+                <td>{{ flight.departure_time }}</td>
+                <td><span class="status-badge status-{{ flight.status.lower().replace(' ', '-') }}">{{ flight.status }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

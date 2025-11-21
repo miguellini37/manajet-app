@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{% if edit_mode %}Edit{% else %}Add{% endif %} Jet</h1>
+<form method="POST" class="card">
+    <div class="form-group">
+        <label>Jet Model *</label>
+        <input type="text" name="model" value="{{ jet.model if jet else '' }}" placeholder="e.g., Gulfstream G650" required>
+    </div>
+    <div class="form-group">
+        <label>Tail Number *</label>
+        <input type="text" name="tail_number" value="{{ jet.tail_number if jet else '' }}" placeholder="e.g., N123AB" required>
+    </div>
+    <div class="form-group">
+        <label>Passenger Capacity *</label>
+        <input type="number" name="capacity" value="{{ jet.capacity if jet else '' }}" min="1" max="50" required>
+    </div>
+    <div class="form-group">
+        <label>Status</label>
+        <select name="status">
+            <option value="Available" {% if jet and jet.status == 'Available' %}selected{% endif %}>Available</option>
+            <option value="Maintenance" {% if jet and jet.status == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+            <option value="In Flight" {% if jet and jet.status == 'In Flight' %}selected{% endif %}>In Flight</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-success">{% if edit_mode %}Update{% else %}Add{% endif %} Jet</button>
+    <a href="{{ url_for('jets') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

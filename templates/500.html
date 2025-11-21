@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="text-align: center; padding: 60px;">
+    <h1 style="font-size: 72px; color: #e74c3c;">500</h1>
+    <h2>Server Error</h2>
+    <p style="margin-top: 20px;">Something went wrong. Please try again later.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary" style="margin-top: 20px;">Go to Dashboard</a>
+</div>
+{% endblock %}

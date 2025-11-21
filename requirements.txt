@@ -1,6 +1,7 @@
 # Core dependencies for web deployment
 Flask==3.0.0
 gunicorn==21.2.0
+requests==2.31.0  # For health checks
 
 # Optional but recommended
 Flask-CORS==4.0.0  # For API access from different domains

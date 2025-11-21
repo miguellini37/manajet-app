@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Jets</h1>
+<a href="{{ url_for('add_jet') }}" class="btn btn-primary" style="margin-bottom: 20px;">➕ Add New Jet</a>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th><th>Model</th><th>Tail Number</th><th>Capacity</th><th>Status</th><th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for jet in jets %}
+        <tr>
+            <td>{{ jet.jet_id }}</td>
+            <td>{{ jet.model }}</td>
+            <td>{{ jet.tail_number }}</td>
+            <td>{{ jet.capacity }}</td>
+            <td><span class="status-badge status-{{ jet.status.lower().replace(' ', '-') }}">{{ jet.status }}</span></td>
+            <td>
+                <a href="{{ url_for('view_jet', jet_id=jet.jet_id) }}" class="btn btn-primary">View Schedule</a>
+                <a href="{{ url_for('aircraft_sheet', jet_id=jet.jet_id) }}" class="btn" target="_blank" title="Print Aircraft Sheet">📄</a>
+                <a href="{{ url_for('edit_jet', jet_id=jet.jet_id) }}" class="btn btn-success">Edit</a>
+                <form method="POST" action="{{ url_for('delete_jet', jet_id=jet.jet_id) }}" style="display:inline;" onsubmit="return confirm('Delete this jet?');">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

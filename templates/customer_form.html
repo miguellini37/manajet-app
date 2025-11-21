@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if edit_mode else 'Add' }} Customer - Manajet{% endblock %}
+
+{% block content %}
+<h1>{{ 'Edit Customer' if edit_mode else 'Add New Customer' }}</h1>
+
+<div class="card">
+    <form method="POST">
+        <div class="form-group">
+            <label for="name">Full Name *</label>
+            <input type="text" id="name" name="name" required
+                   value="{{ customer.name if customer else '' }}"
+                   placeholder="John Smith">
+        </div>
+
+        <div class="form-group">
+            <label for="company">Company Name *</label>
+            <input type="text" id="company" name="company" required
+                   value="{{ customer.company if customer else '' }}"
+                   placeholder="Acme Corporation">
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" name="email" required
+                   value="{{ customer.email if customer else '' }}"
+                   placeholder="john.smith@acme.com">
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Phone Number *</label>
+            <input type="tel" id="phone" name="phone" required
+                   value="{{ customer.phone if customer else '' }}"
+                   placeholder="+1-555-0123">
+        </div>
+
+        <div class="form-group">
+            <label for="address">Address *</label>
+            <textarea id="address" name="address" rows="3" required
+                      placeholder="123 Main St, New York, NY 10001">{{ customer.address if customer else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {{ 'Update Customer' if edit_mode else 'Create Customer' }}
+            </button>
+            <a href="{{ url_for('customers') }}" class="btn">Cancel</a>
+            {% if edit_mode %}
+            <button type="button" class="btn btn-danger" onclick="confirmDelete()" style="margin-left: auto;">
+                Delete Customer
+            </button>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+{% if edit_mode %}
+<form id="deleteForm" method="POST" action="{{ url_for('delete_customer', customer_id=customer.customer_id) }}" style="display: none;">
+</form>
+
+<script>
+function confirmDelete() {
+    if (confirm('Are you sure you want to delete this customer? This action cannot be undone and will fail if the customer has associated jets or passengers.')) {
+        document.getElementById('deleteForm').submit();
+    }
+}
+</script>
+{% endif %}
+
+<style>
+.form-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+@media (max-width: 480px) {
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions button,
+    .form-actions a {
+        width: 100%;
+    }
+
+    .btn-danger {
+        margin-left: 0 !important;
+    }
+}
+</style>
+{% endblock %}

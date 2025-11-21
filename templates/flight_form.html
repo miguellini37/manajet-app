@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Flight' if flight else 'Schedule Flight' }} - Manajet{% endblock %}
+
+{% block content %}
+<h1>{{ 'Edit Flight' if flight else 'Schedule New Flight' }}</h1>
+
+{% if maintenance_warning %}
+<div class="card" style="background: #fff3cd; border-left: 4px solid #ff9800; margin-bottom: 20px;">
+    <h2 style="color: #856404; margin-bottom: 15px;">⚠️ Maintenance Conflict Detected</h2>
+    <p style="margin-bottom: 15px;">
+        <strong>The selected aircraft has scheduled maintenance:</strong>
+    </p>
+    <ul style="margin-bottom: 15px; padding-left: 20px;">
+        <li><strong>Type:</strong> {{ maintenance_details.maintenance_type }}</li>
+        <li><strong>Scheduled Date:</strong> {{ maintenance_details.scheduled_date }}</li>
+        <li><strong>Status:</strong> {{ maintenance_details.status }}</li>
+    </ul>
+    <p style="color: #856404; font-weight: bold;">
+        Scheduling this flight will override the maintenance schedule. Are you sure you want to proceed?
+    </p>
+</div>
+{% endif %}
+
+<div class="card">
+    <form method="POST">
+        {% if maintenance_warning %}
+        <input type="hidden" name="override_maintenance" value="true">
+        {% endif %}
+        <div class="grid-2">
+            <!-- Left Column -->
+            <div>
+                <div class="form-group">
+                    <label>Select Aircraft *</label>
+                    <select name="jet_id" id="jet_id" required>
+                        <option value="">-- Choose Aircraft --</option>
+                        {% for jet in jets %}
+                            <option value="{{ jet.jet_id }}"
+                                    {% if (form_data and form_data.get('jet_id') == jet.jet_id) or (flight and flight.jet_id == jet.jet_id) %}selected{% endif %}
+                                    data-capacity="{{ jet.capacity }}">
+                                {{ jet.model }} ({{ jet.tail_number }}) - Capacity: {{ jet.capacity }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if not jets %}
+                        <small style="color: #e74c3c;">No available aircraft. <a href="{{ url_for('add_jet') }}">Add an aircraft first</a></small>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label>Departure Airport *</label>
+                    <input type="text" name="departure" value="{{ form_data.get('departure') if form_data else (flight.departure if flight else '') }}" required placeholder="e.g., JFK, LAX, ORD">
+                </div>
+
+                <div class="form-group">
+                    <label>Destination Airport *</label>
+                    <input type="text" name="destination" value="{{ form_data.get('destination') if form_data else (flight.destination if flight else '') }}" required placeholder="e.g., MIA, DFW, ATL">
+                </div>
+
+                <div class="form-group">
+                    <label>Departure Time *</label>
+                    <input type="datetime-local" name="departure_time" value="{{ form_data.get('departure_time') if form_data else (flight.departure_time.replace(' ', 'T') if flight else '') }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Arrival Time *</label>
+                    <input type="datetime-local" name="arrival_time" value="{{ form_data.get('arrival_time') if form_data else (flight.arrival_time.replace(' ', 'T') if flight else '') }}" required>
+                </div>
+
+                {% if flight %}
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="Scheduled" {% if flight.status == 'Scheduled' %}selected{% endif %}>Scheduled</option>
+                        <option value="In Progress" {% if flight.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                        <option value="Completed" {% if flight.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Cancelled" {% if flight.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column -->
+            <div>
+                <!-- Passengers Section -->
+                <div class="form-group">
+                    <label>Select Passengers</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button type="button" class="btn btn-success" onclick="showAddPassengerModal()" style="flex: 1;">
+                            + Add New Passenger
+                        </button>
+                        <span id="passengerCount" style="padding: 10px; background: #f8f9fa; border-radius: 5px; font-weight: bold;">
+                            0 selected
+                        </span>
+                    </div>
+                    <select name="passengers" id="passengers" multiple size="8" style="height: 200px;">
+                        {% for passenger in passengers %}
+                            <option value="{{ passenger.passenger_id }}"
+                                    {% if (form_data and passenger.passenger_id in form_data.getlist('passengers')) or (flight and passenger.passenger_id in flight.passenger_ids) %}selected{% endif %}>
+                                {{ passenger.name }} ({{ passenger.passport_number }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <small>Hold Ctrl (Cmd on Mac) to select multiple passengers</small>
+                    {% if not passengers %}
+                        <small style="color: #e74c3c; display: block; margin-top: 5px;">
+                            No passengers available. Use the button above to add one.
+                        </small>
+                    {% endif %}
+                    <small id="capacityWarning" style="color: #e74c3c; display: none; font-weight: bold; margin-top: 5px;"></small>
+                </div>
+
+                <!-- Crew Section -->
+                <div class="form-group">
+                    <label>Select Crew (Required: At least 1 pilot) *</label>
+                    <div style="padding: 10px; background: #fff3cd; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid #ffc107;">
+                        <strong>⚠️ Must include at least one PILOT!</strong>
+                    </div>
+                    <select name="crew" id="crew" multiple size="8" required style="height: 200px;">
+                        {% for member in crew %}
+                            <option value="{{ member.crew_id }}"
+                                    {% if (form_data and member.crew_id in form_data.getlist('crew')) or (flight and member.crew_id in flight.crew_ids) %}selected{% endif %}
+                                    data-type="{{ member.crew_type }}">
+                                {{ member.name }} - {{ member.crew_type }}
+                                {% if member.license_number %} ({{ member.license_number }}){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <small>Hold Ctrl (Cmd on Mac) to select multiple crew members</small>
+                    <div id="crewValidation" style="margin-top: 10px; padding: 10px; background: #f8d7da; border-radius: 5px; display: none;">
+                        <strong style="color: #721c24;">❌ No pilot selected!</strong>
+                    </div>
+                    <div id="crewConfirmation" style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px; display: none;">
+                        <strong style="color: #155724;">✅ Pilot(s) selected</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #ecf0f1;">
+            <button type="submit" class="btn btn-primary" id="submitBtn">{{ 'Update Flight' if flight else 'Schedule Flight' }}</button>
+            <a href="{{ url_for('flights') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<!-- Add Passenger Modal -->
+<div id="addPassengerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; overflow-y: auto;">
+    <div style="max-width: 600px; margin: 50px auto; background: white; border-radius: 10px; padding: 30px;">
+        <h2 style="margin-bottom: 20px;">Add New Passenger</h2>
+        <form id="quickPassengerForm" onsubmit="addPassengerQuick(event)">
+            <div class="form-group">
+                <label>Name *</label>
+                <input type="text" id="quick_name" required>
+            </div>
+            <div class="form-group">
+                <label>Passport Number *</label>
+                <input type="text" id="quick_passport" required>
+            </div>
+            <div class="form-group">
+                <label>Nationality *</label>
+                <input type="text" id="quick_nationality" required>
+            </div>
+            <div class="form-group">
+                <label>Passport Expiry *</label>
+                <input type="date" id="quick_expiry" required>
+            </div>
+            <div class="form-group">
+                <label>Contact *</label>
+                <input type="text" id="quick_contact" required placeholder="Email or phone">
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-success" style="flex: 1;">Add Passenger</button>
+                <button type="button" class="btn btn-secondary" onclick="closeAddPassengerModal()" style="flex: 1;">Cancel</button>
+            </div>
+            <div id="modalMessage" style="margin-top: 15px; padding: 10px; border-radius: 5px; display: none;"></div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update passenger count
+    function updatePassengerCount() {
+        const select = document.getElementById('passengers');
+        const count = select.selectedOptions.length;
+        document.getElementById('passengerCount').textContent = count + ' selected';
+
+        // Check capacity
+        const jetSelect = document.getElementById('jet_id');
+        if (jetSelect.selectedIndex > 0) {
+            const capacity = parseInt(jetSelect.options[jetSelect.selectedIndex].dataset.capacity);
+            const warning = document.getElementById('capacityWarning');
+            if (count > capacity) {
+                warning.textContent = `⚠️ Warning: ${count} passengers exceeds jet capacity of ${capacity}!`;
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+    }
+
+    // Validate crew selection (must have pilot)
+    function validateCrew() {
+        const select = document.getElementById('crew');
+        let hasPilot = false;
+
+        for (let option of select.selectedOptions) {
+            if (option.dataset.type === 'Pilot') {
+                hasPilot = true;
+                break;
+            }
+        }
+
+        const validation = document.getElementById('crewValidation');
+        const confirmation = document.getElementById('crewConfirmation');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (select.selectedOptions.length > 0) {
+            if (hasPilot) {
+                validation.style.display = 'none';
+                confirmation.style.display = 'block';
+                submitBtn.disabled = false;
+            } else {
+                validation.style.display = 'block';
+                confirmation.style.display = 'none';
+                submitBtn.disabled = true;
+            }
+        } else {
+            validation.style.display = 'none';
+            confirmation.style.display = 'none';
+            submitBtn.disabled = false;
+        }
+    }
+
+    // Event listeners
+    document.getElementById('passengers').addEventListener('change', updatePassengerCount);
+    document.getElementById('crew').addEventListener('change', validateCrew);
+    document.getElementById('jet_id').addEventListener('change', updatePassengerCount);
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updatePassengerCount();
+        validateCrew();
+    });
+
+    // Modal functions
+    function showAddPassengerModal() {
+        document.getElementById('addPassengerModal').style.display = 'block';
+    }
+
+    function closeAddPassengerModal() {
+        document.getElementById('addPassengerModal').style.display = 'none';
+        document.getElementById('quickPassengerForm').reset();
+        document.getElementById('modalMessage').style.display = 'none';
+    }
+
+    // Add passenger via AJAX
+    async function addPassengerQuick(event) {
+        event.preventDefault();
+
+        const data = {
+            name: document.getElementById('quick_name').value,
+            passport_number: document.getElementById('quick_passport').value,
+            nationality: document.getElementById('quick_nationality').value,
+            passport_expiry: document.getElementById('quick_expiry').value,
+            contact: document.getElementById('quick_contact').value
+        };
+
+        try {
+            const response = await fetch('/api/passengers/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Add to dropdown
+                const select = document.getElementById('passengers');
+                const option = document.createElement('option');
+                option.value = result.passenger_id;
+                option.text = `${result.name} (${result.passport_number})`;
+                option.selected = true;
+                select.appendChild(option);
+
+                // Show success message
+                const msg = document.getElementById('modalMessage');
+                msg.textContent = '✅ Passenger added successfully!';
+                msg.style.background = '#d4edda';
+                msg.style.color = '#155724';
+                msg.style.display = 'block';
+
+                updatePassengerCount();
+
+                // Close modal after 1 second
+                setTimeout(() => {
+                    closeAddPassengerModal();
+                }, 1000);
+            } else {
+                throw new Error(result.error || 'Failed to add passenger');
+            }
+        } catch (error) {
+            const msg = document.getElementById('modalMessage');
+            msg.textContent = '❌ Error: ' + error.message;
+            msg.style.background = '#f8d7da';
+            msg.style.color = '#721c24';
+            msg.style.display = 'block';
+        }
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('addPassengerModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAddPassengerModal();
+        }
+    });
+</script>
+{% endblock %}

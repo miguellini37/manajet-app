@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="{{ url_for('passengers') }}" class="btn btn-secondary" style="margin-bottom: 20px;">← Back to Passengers</a>
+<div class="card">
+    <h1>{{ passenger.name }}</h1>
+    <div style="margin-top: 20px;">
+        <p><strong>Passenger ID:</strong> {{ passenger.passenger_id }}</p>
+        <p><strong>Passport Number:</strong> {{ passenger.passport_number }}</p>
+        <p><strong>Nationality:</strong> {{ passenger.nationality }}</p>
+        <p><strong>Passport Expiry:</strong> {{ passenger.passport_expiry }}</p>
+        <p><strong>Contact:</strong> {{ passenger.contact }}</p>
+    </div>
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('edit_passenger', passenger_id=passenger.passenger_id) }}" class="btn btn-success">Edit Passenger</a>
+        <form method="POST" action="{{ url_for('delete_passenger', passenger_id=passenger.passenger_id) }}" style="display:inline;" onsubmit="return confirm('Delete this passenger? This cannot be undone.');">
+            <button type="submit" class="btn btn-danger">Delete Passenger</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

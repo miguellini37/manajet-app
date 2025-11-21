@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Crew Members</h1>
+<a href="{{ url_for('add_crew') }}" class="btn btn-primary" style="margin-bottom: 20px;">➕ Add New Crew Member</a>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th><th>Name</th><th>Type</th><th>Passport</th><th>Nationality</th><th>License</th><th>Expiry</th><th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for crew_member in crew %}
+        <tr>
+            <td>{{ crew_member.crew_id }}</td>
+            <td>{{ crew_member.name }}</td>
+            <td><span class="status-badge {% if crew_member.crew_type == 'Pilot' %}status-in-progress{% else %}status-available{% endif %}">{{ crew_member.crew_type }}</span></td>
+            <td>{{ crew_member.passport_number }}</td>
+            <td>{{ crew_member.nationality }}</td>
+            <td>{{ crew_member.license_number or 'N/A' }}</td>
+            <td>{{ crew_member.passport_expiry }}</td>
+            <td>
+                <a href="{{ url_for('view_crew', crew_id=crew_member.crew_id) }}" class="btn btn-primary">View</a>
+                <a href="{{ url_for('edit_crew', crew_id=crew_member.crew_id) }}" class="btn btn-success">Edit</a>
+                <form method="POST" action="{{ url_for('delete_crew', crew_id=crew_member.crew_id) }}" style="display:inline;" onsubmit="return confirm('Delete this crew member?');">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

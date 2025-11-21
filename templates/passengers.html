@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Passengers</h1>
+
+{% if session.get('role') in ['customer', 'admin'] %}
+<a href="{{ url_for('add_passenger') }}" class="btn btn-primary" style="margin-bottom: 20px;">➕ Add New Passenger</a>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th><th>Name</th><th>Passport</th><th>Nationality</th><th>Expiry</th><th>Contact</th><th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for passenger in passengers %}
+        <tr>
+            <td>{{ passenger.passenger_id }}</td>
+            <td>{{ passenger.name }}</td>
+            <td>{{ passenger.passport_number }}</td>
+            <td>{{ passenger.nationality }}</td>
+            <td>{{ passenger.passport_expiry }}</td>
+            <td>{{ passenger.contact }}</td>
+            <td>
+                <a href="{{ url_for('view_passenger', passenger_id=passenger.passenger_id) }}" class="btn btn-primary">View</a>
+                {% if session.get('role') in ['customer', 'admin'] %}
+                <a href="{{ url_for('edit_passenger', passenger_id=passenger.passenger_id) }}" class="btn btn-success">Edit</a>
+                <form method="POST" action="{{ url_for('delete_passenger', passenger_id=passenger.passenger_id) }}" style="display:inline;" onsubmit="return confirm('Delete this passenger?');">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

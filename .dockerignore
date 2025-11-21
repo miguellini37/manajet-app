@@ -1,0 +1,60 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.claude/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+
+# Development files
+*.tmp
+*.bak
+test_*.py
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Docker files (don't need these in the image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Deployment scripts (Railway specific)
+Procfile
+railway.toml
+deploy-to-railway.bat
+deploy-to-railway.sh
+.env.example
+
+# Keep data file out (will be mounted as volume)
+# jet_schedule_data.json
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

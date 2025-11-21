@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{% if edit_mode %}Edit{% else %}Add{% endif %} Crew Member</h1>
+<form method="POST" class="card">
+    <div class="form-group">
+        <label>Full Name *</label>
+        <input type="text" name="name" value="{{ crew.name if crew else '' }}" required>
+    </div>
+    <div class="form-group">
+        <label>Crew Type *</label>
+        <select name="crew_type" required onchange="toggleLicenseField(this)">
+            <option value="">Select type...</option>
+            <option value="Pilot" {% if crew and crew.crew_type == 'Pilot' %}selected{% endif %}>Pilot</option>
+            <option value="Cabin Crew" {% if crew and crew.crew_type == 'Cabin Crew' %}selected{% endif %}>Cabin Crew</option>
+        </select>
+    </div>
+    <div class="form-group" id="license-group" {% if not crew or crew.crew_type != 'Pilot' %}style="display:none;"{% endif %}>
+        <label>License Number *</label>
+        <input type="text" name="license_number" id="license_number" value="{{ crew.license_number if crew else '' }}">
+        <small>Required for pilots</small>
+    </div>
+    <div class="form-group">
+        <label>Passport Number *</label>
+        <input type="text" name="passport_number" value="{{ crew.passport_number if crew else '' }}" required>
+    </div>
+    <div class="form-group">
+        <label>Nationality *</label>
+        <input type="text" name="nationality" value="{{ crew.nationality if crew else '' }}" required>
+    </div>
+    <div class="form-group">
+        <label>Passport Expiry Date *</label>
+        <input type="date" name="passport_expiry" value="{{ crew.passport_expiry if crew else '' }}" required>
+    </div>
+    <div class="form-group">
+        <label>Contact (Email/Phone) *</label>
+        <input type="text" name="contact" value="{{ crew.contact if crew else '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-success">{% if edit_mode %}Update{% else %}Add{% endif %} Crew Member</button>
+    <a href="{{ url_for('crew') }}" class="btn btn-secondary">Cancel</a>
+</form>
+
+<script>
+function toggleLicenseField(select) {
+    const licenseGroup = document.getElementById('license-group');
+    const licenseInput = document.getElementById('license_number');
+    if (select.value === 'Pilot') {
+        licenseGroup.style.display = 'block';
+        licenseInput.required = true;
+    } else {
+        licenseGroup.style.display = 'none';
+        licenseInput.required = false;
+    }
+}
+</script>
+{% endblock %}

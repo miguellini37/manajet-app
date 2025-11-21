@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{% if edit_mode %}Edit{% else %}Schedule{% endif %} Maintenance</h1>
+<form method="POST" class="card">
+    <div class="form-group">
+        <label>Jet *</label>
+        <select name="jet_id" required>
+            <option value="">Select a jet...</option>
+            {% for jet in jets %}
+            <option value="{{ jet.jet_id }}" {% if maintenance and maintenance.jet_id == jet.jet_id %}selected{% endif %}>
+                {{ jet.model }} ({{ jet.tail_number }}) - {{ jet.status }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Scheduled Date *</label>
+        <input type="date" name="scheduled_date" value="{{ maintenance.scheduled_date if maintenance else '' }}" required>
+    </div>
+    <div class="form-group">
+        <label>Maintenance Type *</label>
+        <select name="maintenance_type" required>
+            <option value="Routine" {% if maintenance and maintenance.maintenance_type == 'Routine' %}selected{% endif %}>Routine</option>
+            <option value="Emergency" {% if maintenance and maintenance.maintenance_type == 'Emergency' %}selected{% endif %}>Emergency</option>
+            <option value="Inspection" {% if maintenance and maintenance.maintenance_type == 'Inspection' %}selected{% endif %}>Inspection</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Description *</label>
+        <textarea name="description" rows="4" required>{{ maintenance.description if maintenance else '' }}</textarea>
+    </div>
+    {% if edit_mode %}
+    <div class="form-group">
+        <label>Status</label>
+        <select name="status">
+            <option value="Scheduled" {% if maintenance and maintenance.status == 'Scheduled' %}selected{% endif %}>Scheduled</option>
+            <option value="In Progress" {% if maintenance and maintenance.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+            <option value="Completed" {% if maintenance and maintenance.status == 'Completed' %}selected{% endif %}>Completed</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Completed Date (if completed)</label>
+        <input type="date" name="completed_date" value="{{ maintenance.completed_date if maintenance and maintenance.completed_date else '' }}">
+    </div>
+    {% endif %}
+    <button type="submit" class="btn btn-success">{% if edit_mode %}Update{% else %}Schedule{% endif %} Maintenance</button>
+    <a href="{{ url_for('maintenance') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

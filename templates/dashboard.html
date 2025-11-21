@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Manajet{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+<p style="color: var(--gray); margin-bottom: 36px; font-size: 16px;">Welcome back, <strong style="color: var(--dark);">{{ user.username }}</strong> <span style="color: var(--gray-light);">&bull;</span> <span style="text-transform: capitalize; color: var(--primary);">{{ user.role }}</span></p>
+
+<!-- Stats Overview -->
+<div class="grid-4" style="margin-bottom: 36px;">
+    <div class="card" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border: none; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -20px; right: -20px; font-size: 100px; opacity: 0.15;">✈️</div>
+        <h3 style="margin-bottom: 16px; font-size: 14px; opacity: 0.95; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Total Aircraft</h3>
+        <div style="font-size: 48px; font-weight: 800; margin-bottom: 12px; letter-spacing: -1px;">{{ stats.total_jets }}</div>
+        <div style="font-size: 15px; opacity: 0.9; font-weight: 500;">
+            <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; display: inline-block;">{{ stats.available_jets }} available</span>
+        </div>
+    </div>
+
+    <div class="card" style="background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); color: white; border: none; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -20px; right: -20px; font-size: 100px; opacity: 0.15;">🛫</div>
+        <h3 style="margin-bottom: 16px; font-size: 14px; opacity: 0.95; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Active Flights</h3>
+        <div style="font-size: 48px; font-weight: 800; margin-bottom: 12px; letter-spacing: -1px;">{{ stats.active_flights }}</div>
+        <div style="font-size: 15px; opacity: 0.9; font-weight: 500;">
+            <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; display: inline-block;">{{ stats.in_flight_jets }} in flight</span>
+        </div>
+    </div>
+
+    <div class="card" style="background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%); color: white; border: none; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -20px; right: -20px; font-size: 100px; opacity: 0.15;">👥</div>
+        <h3 style="margin-bottom: 16px; font-size: 14px; opacity: 0.95; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Passengers</h3>
+        <div style="font-size: 48px; font-weight: 800; margin-bottom: 12px; letter-spacing: -1px;">{{ stats.total_passengers }}</div>
+        <div style="font-size: 15px; opacity: 0.9; font-weight: 500;">
+            <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; display: inline-block;">Registered</span>
+        </div>
+    </div>
+
+    <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%); color: white; border: none; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -20px; right: -20px; font-size: 100px; opacity: 0.15;">🔧</div>
+        <h3 style="margin-bottom: 16px; font-size: 14px; opacity: 0.95; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Maintenance</h3>
+        <div style="font-size: 48px; font-weight: 800; margin-bottom: 12px; letter-spacing: -1px;">{{ stats.maintenance_jets }}</div>
+        <div style="font-size: 15px; opacity: 0.9; font-weight: 500;">
+            <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; display: inline-block;">Under maintenance</span>
+        </div>
+    </div>
+</div>
+
+<!-- Activity Feed -->
+<div class="grid-2">
+    <!-- Left Column -->
+    <div>
+        <!-- Active Flights -->
+        <div class="card">
+            <h2>🛫 Active Flights</h2>
+            {% if activity.active_flights %}
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Flight</th>
+                                <th>Route</th>
+                                <th>Aircraft</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for flight in activity.active_flights %}
+                            <tr>
+                                <td><a href="{{ url_for('view_flight', flight_id=flight.flight_id) }}">{{ flight.flight_id }}</a></td>
+                                <td>{{ flight.departure }} → {{ flight.destination }}</td>
+                                <td>{{ manager.get_jet(flight.jet_id).model if manager.get_jet(flight.jet_id) else flight.jet_id }}</td>
+                                <td><span class="status-badge status-in-progress">{{ flight.status }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="color: #888; padding: 20px; text-align: center;">No active flights</p>
+            {% endif %}
+        </div>
+
+        <!-- Flights This Week -->
+        <div class="card">
+            <h2>📅 Flights This Week ({{ activity.week_start }} to {{ activity.week_end }})</h2>
+            {% if activity.flights_this_week %}
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Flight</th>
+                                <th>Route</th>
+                                <th>Departure</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for flight in activity.flights_this_week %}
+                            <tr>
+                                <td><a href="{{ url_for('view_flight', flight_id=flight.flight_id) }}">{{ flight.flight_id }}</a></td>
+                                <td>{{ flight.departure }} → {{ flight.destination }}</td>
+                                <td>{{ flight.departure_time }}</td>
+                                <td><span class="status-badge status-{{ flight.status.lower().replace(' ', '-') }}">{{ flight.status }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="color: #888; padding: 20px; text-align: center;">No flights scheduled this week</p>
+            {% endif %}
+        </div>
+
+        <!-- Upcoming Flights -->
+        <div class="card">
+            <h2>🔜 Upcoming Flights (Next 7 Days)</h2>
+            {% if activity.upcoming_flights %}
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Flight</th>
+                                <th>Route</th>
+                                <th>Departure</th>
+                                <th>Passengers</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for flight in activity.upcoming_flights %}
+                            <tr>
+                                <td><a href="{{ url_for('view_flight', flight_id=flight.flight_id) }}">{{ flight.flight_id }}</a></td>
+                                <td>{{ flight.departure }} → {{ flight.destination }}</td>
+                                <td>{{ flight.departure_time }}</td>
+                                <td>{{ flight.passenger_ids|length }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="color: #888; padding: 20px; text-align: center;">No upcoming flights</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column -->
+    <div>
+        <!-- Active Maintenance -->
+        <div class="card">
+            <h2>🔧 Active Maintenance</h2>
+            {% if activity.active_maintenance %}
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Aircraft</th>
+                                <th>Type</th>
+                                <th>Scheduled</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for maint in activity.active_maintenance %}
+                            <tr>
+                                <td><a href="{{ url_for('view_maintenance', maintenance_id=maint.maintenance_id) }}">{{ maint.maintenance_id }}</a></td>
+                                <td>{{ manager.get_jet(maint.jet_id).model if manager.get_jet(maint.jet_id) else maint.jet_id }}</td>
+                                <td>{{ maint.maintenance_type }}</td>
+                                <td>{{ maint.scheduled_date }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="color: #888; padding: 20px; text-align: center;">No active maintenance</p>
+            {% endif %}
+        </div>
+
+        <!-- Maintenance This Week -->
+        <div class="card">
+            <h2>🗓️ Maintenance This Week</h2>
+            {% if activity.maintenance_this_week %}
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Aircraft</th>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for maint in activity.maintenance_this_week %}
+                            <tr>
+                                <td><a href="{{ url_for('view_maintenance', maintenance_id=maint.maintenance_id) }}">{{ maint.maintenance_id }}</a></td>
+                                <td>{{ manager.get_jet(maint.jet_id).model if manager.get_jet(maint.jet_id) else maint.jet_id }}</td>
+                                <td>{{ maint.maintenance_type }}</td>
+                                <td>{{ maint.scheduled_date }}</td>
+                                <td><span class="status-badge status-{{ maint.status.lower().replace(' ', '-') }}">{{ maint.status }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="color: #888; padding: 20px; text-align: center;">No maintenance scheduled this week</p>
+            {% endif %}
+        </div>
+
+        <!-- Recently Completed -->
+        <div class="card">
+            <h2>✅ Recently Completed Flights</h2>
+            {% if activity.recent_completed %}
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Flight</th>
+                                <th>Route</th>
+                                <th>Completed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for flight in activity.recent_completed %}
+                            <tr>
+                                <td><a href="{{ url_for('view_flight', flight_id=flight.flight_id) }}">{{ flight.flight_id }}</a></td>
+                                <td>{{ flight.departure }} → {{ flight.destination }}</td>
+                                <td>{{ flight.arrival_time }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="color: #888; padding: 20px; text-align: center;">No recently completed flights</p>
+            {% endif %}
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card" style="background: linear-gradient(135deg, var(--gray-lighter) 0%, #e2e8f0 100%); border: 2px solid #e2e8f0;">
+            <h2>📊 Quick Stats</h2>
+            <div style="display: grid; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-sm); transition: var(--transition);" onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                    <span style="color: var(--gray); font-weight: 500;">Total Crew</span>
+                    <strong style="font-size: 24px; color: var(--primary);">{{ stats.total_crew }}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-sm); transition: var(--transition);" onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                    <span style="color: var(--gray); font-weight: 500;">Total Flights</span>
+                    <strong style="font-size: 24px; color: var(--accent);">{{ stats.total_flights }}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-sm); transition: var(--transition);" onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='var(--shadow-sm)'">
+                    <span style="color: var(--gray); font-weight: 500;">Maintenance Records</span>
+                    <strong style="font-size: 24px; color: var(--warning);">{{ stats.total_maintenance }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card" style="margin-top: 36px; background: linear-gradient(135deg, var(--dark) 0%, var(--dark-light) 100%); color: white; border: none; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: -50px; right: -50px; font-size: 200px; opacity: 0.05;">⚡</div>
+    <h2 style="color: white; position: relative; z-index: 1;">⚡ Quick Actions</h2>
+    <div class="grid-4" style="position: relative; z-index: 1;">
+        {% if user.role in ['customer', 'admin'] %}
+        <a href="{{ url_for('add_passenger') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">➕ Add Passenger</a>
+        {% endif %}
+        <a href="{{ url_for('add_flight') }}" class="btn btn-success" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">✈️ Schedule Flight</a>
+        {% if user.role in ['admin', 'crew', 'mechanic'] %}
+        <a href="{{ url_for('add_maintenance') }}" class="btn btn-secondary" style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);">🔧 Schedule Maintenance</a>
+        {% endif %}
+        {% if user.role == 'admin' %}
+        <a href="{{ url_for('customers') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);">👥 Manage Customers</a>
+        {% endif %}
+        <a href="{{ url_for('jets') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);">🛩️ View All Aircraft</a>
+    </div>
+</div>
+
+{% endblock %}

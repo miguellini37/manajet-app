@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{% if edit_mode %}Edit{% else %}Add{% endif %} Passenger</h1>
+<form method="POST" class="card">
+    <div class="form-group">
+        <label>Full Name *</label>
+        <input type="text" name="name" value="{{ passenger.name if passenger else '' }}" required>
+    </div>
+    <div class="form-group">
+        <label>Passport Number *</label>
+        <input type="text" name="passport_number" value="{{ passenger.passport_number if passenger else '' }}" required>
+    </div>
+    <div class="form-group">
+        <label>Nationality *</label>
+        <input type="text" name="nationality" value="{{ passenger.nationality if passenger else '' }}" required>
+    </div>
+    <div class="form-group">
+        <label>Passport Expiry Date *</label>
+        <input type="date" name="passport_expiry" value="{{ passenger.passport_expiry if passenger else '' }}" required>
+    </div>
+    <div class="form-group">
+        <label>Contact (Email/Phone) *</label>
+        <input type="text" name="contact" value="{{ passenger.contact if passenger else '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-success">{% if edit_mode %}Update{% else %}Add{% endif %} Passenger</button>
+    <a href="{{ url_for('passengers') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

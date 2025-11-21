@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aircraft Sheet - {{ jet.tail_number }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .print-only {
+            display: none;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .header h1 {
+            font-size: 32pt;
+            margin-bottom: 5px;
+        }
+
+        .header .subtitle {
+            font-size: 14pt;
+            opacity: 0.9;
+        }
+
+        .aircraft-info {
+            background: white;
+            padding: 30px;
+            border-left: 5px solid #667eea;
+            margin-bottom: 20px;
+        }
+
+        .aircraft-info h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 20pt;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .info-item label {
+            font-weight: bold;
+            color: #666;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 10pt;
+        }
+
+        .info-item .value {
+            font-size: 14pt;
+            color: #333;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 18pt;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10pt;
+            font-weight: 600;
+        }
+
+        .status-scheduled { background: #e3f2fd; color: #1976d2; }
+        .status-completed { background: #e8f5e9; color: #388e3c; }
+        .status-cancelled { background: #ffebee; color: #d32f2f; }
+        .status-in-progress { background: #fff3e0; color: #f57c00; }
+        .status-available { background: #e8f5e9; color: #388e3c; }
+        .status-maintenance { background: #fff3e0; color: #f57c00; }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 14pt;
+            margin-right: 10px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            color: #666;
+            font-size: 10pt;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-card .number {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-card .label {
+            font-size: 10pt;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media print {
+            .header h1 {
+                font-size: 24pt;
+            }
+            .section h2 {
+                font-size: 14pt;
+            }
+            th, td {
+                font-size: 10pt;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Print/Back Buttons -->
+        <div class="no-print" style="margin-bottom: 20px;">
+            <button onclick="window.print()" class="btn">🖨️ Print Aircraft Sheet</button>
+            <a href="{{ url_for('view_jet', jet_id=jet.jet_id) }}" class="btn btn-secondary">← Back to Aircraft</a>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <h1>MANAJET</h1>
+            <div class="subtitle">Aircraft Information Sheet</div>
+        </div>
+
+        <!-- Aircraft Information -->
+        <div class="aircraft-info">
+            <h2>{{ jet.model }} - {{ jet.tail_number }}</h2>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Tail Number</label>
+                    <div class="value">{{ jet.tail_number }}</div>
+                </div>
+                <div class="info-item">
+                    <label>Aircraft Model</label>
+                    <div class="value">{{ jet.model }}</div>
+                </div>
+                <div class="info-item">
+                    <label>Capacity</label>
+                    <div class="value">{{ jet.capacity }} passengers</div>
+                </div>
+                <div class="info-item">
+                    <label>Current Status</label>
+                    <div class="value">
+                        <span class="status-badge status-{{ jet.status.lower().replace(' ', '-') }}">
+                            {{ jet.status }}
+                        </span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <label>Customer</label>
+                    <div class="value">{{ customer.name if customer else 'Unassigned' }}</div>
+                </div>
+                <div class="info-item">
+                    <label>Report Period</label>
+                    <div class="value">{{ month_name }} {{ current_year }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="section">
+            <h2>Monthly Summary</h2>
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="number">{{ flights|length }}</div>
+                    <div class="label">Flights This Month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">{{ maintenance_records|length }}</div>
+                    <div class="label">Maintenance Records</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">{{ flight_hours }}</div>
+                    <div class="label">Estimated Flight Hours</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flights Section -->
+        <div class="section">
+            <h2>📅 Flights Scheduled - {{ month_name }} {{ current_year }}</h2>
+
+            {% if flights %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Flight ID</th>
+                        <th>Date</th>
+                        <th>Route</th>
+                        <th>Departure</th>
+                        <th>Arrival</th>
+                        <th>Status</th>
+                        <th>Passengers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for flight in flights %}
+                    <tr>
+                        <td><strong>{{ flight.flight_id }}</strong></td>
+                        <td>{{ flight.departure_time.split()[0] if 'T' not in flight.departure_time else flight.departure_time.split('T')[0] }}</td>
+                        <td><strong>{{ flight.departure }} → {{ flight.destination }}</strong></td>
+                        <td>{{ flight.departure_time.split()[1] if 'T' not in flight.departure_time else flight.departure_time.split('T')[1] }}</td>
+                        <td>{{ flight.arrival_time.split()[1] if 'T' not in flight.arrival_time else flight.arrival_time.split('T')[1] }}</td>
+                        <td>
+                            <span class="status-badge status-{{ flight.status.lower().replace(' ', '-') }}">
+                                {{ flight.status }}
+                            </span>
+                        </td>
+                        <td>{{ flight.passenger_ids|length }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-data">
+                No flights scheduled for this aircraft in {{ month_name }} {{ current_year }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Maintenance Section -->
+        <div class="section">
+            <h2>🔧 Maintenance Records - {{ month_name }} {{ current_year }}</h2>
+
+            {% if maintenance_records %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Maintenance ID</th>
+                        <th>Type</th>
+                        <th>Scheduled Date</th>
+                        <th>Completion Date</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for maint in maintenance_records %}
+                    <tr>
+                        <td><strong>{{ maint.maintenance_id }}</strong></td>
+                        <td>{{ maint.maintenance_type }}</td>
+                        <td>{{ maint.scheduled_date }}</td>
+                        <td>{{ maint.completion_date if maint.completion_date else '—' }}</td>
+                        <td>
+                            <span class="status-badge status-{{ maint.status.lower().replace(' ', '-') }}">
+                                {{ maint.status }}
+                            </span>
+                        </td>
+                        <td>{{ maint.notes if maint.notes else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-data">
+                No maintenance records for this aircraft in {{ month_name }} {{ current_year }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Manajet IO LLC</strong></p>
+            <p>Generated on {{ current_time }}</p>
+            <p style="margin-top: 10px; font-size: 9pt;">
+                This document contains confidential aircraft operation information. Handle according to company policy.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-print if requested via URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('autoprint') === 'true') {
+            window.onload = function() {
+                window.print();
+            };
+        }
+    </script>
+</body>
+</html>

@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(readlink:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm install:*)",
+      "Bash(railway:*)",
+      "Bash(chmod:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

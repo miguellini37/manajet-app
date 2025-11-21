@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  manajet:
+    build: .
+    container_name: manajet-app
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-please-change-this-secret-key-in-production}
+      - DEBUG=False
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-False}
+      - SESSION_COOKIE_HTTPONLY=True
+      - SESSION_COOKIE_SAMESITE=Lax
+      - PERMANENT_SESSION_LIFETIME=3600
+      - PORT=5000
+    volumes:
+      # Persist data file
+      - ./data:/app/data
+      # Mount data file to persistent location
+      - ./jet_schedule_data.json:/app/jet_schedule_data.json
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/login', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add nginx reverse proxy for production
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: manajet-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - manajet
+  #   restart: unless-stopped
+
+networks:
+  default:
+    name: manajet-network

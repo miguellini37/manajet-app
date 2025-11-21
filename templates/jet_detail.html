@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="{{ url_for('jets') }}" class="btn btn-secondary" style="margin-bottom: 20px;">← Back to Jets</a>
+<div class="card">
+    <h1>{{ jet.model }}</h1>
+    <div style="margin-top: 20px;">
+        <p><strong>Jet ID:</strong> {{ jet.jet_id }}</p>
+        <p><strong>Tail Number:</strong> {{ jet.tail_number }}</p>
+        <p><strong>Capacity:</strong> {{ jet.capacity }} passengers</p>
+        <p><strong>Status:</strong> <span class="status-badge status-{{ jet.status.lower().replace(' ', '-') }}">{{ jet.status }}</span></p>
+    </div>
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('aircraft_sheet', jet_id=jet.jet_id) }}" class="btn btn-primary" target="_blank" style="margin-right: 10px;">📄 Print Aircraft Sheet</a>
+        <a href="{{ url_for('edit_jet', jet_id=jet.jet_id) }}" class="btn btn-success">Edit Jet</a>
+        <form method="POST" action="{{ url_for('delete_jet', jet_id=jet.jet_id) }}" style="display:inline;" onsubmit="return confirm('Delete this jet? This cannot be undone.');">
+            <button type="submit" class="btn btn-danger">Delete Jet</button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h2>Scheduled Flights</h2>
+    {% if flights %}
+    <table>
+        <thead>
+            <tr><th>Flight ID</th><th>Route</th><th>Departure</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+            {% for flight in flights %}
+            <tr>
+                <td>{{ flight.flight_id }}</td>
+                <td>{{ flight.departure }} → {{ flight.destination }}</td>
+                <td>{{ flight.departure_time }}</td>
+                <td><span class="status-badge status-{{ flight.status.lower().replace(' ', '-') }}">{{ flight.status }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No flights scheduled</p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h2>Maintenance Records</h2>
+    {% if maintenance %}
+    <table>
+        <thead>
+            <tr><th>Maintenance ID</th><th>Type</th><th>Scheduled Date</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+            {% for maint in maintenance %}
+            <tr>
+                <td>{{ maint.maintenance_id }}</td>
+                <td>{{ maint.maintenance_type }}</td>
+                <td>{{ maint.scheduled_date }}</td>
+                <td><span class="status-badge status-{{ maint.status.lower().replace(' ', '-') }}">{{ maint.status }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No maintenance scheduled</p>
+    {% endif %}
+</div>
+{% endblock %}

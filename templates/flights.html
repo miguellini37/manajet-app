@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Flights</h1>
+<a href="{{ url_for('add_flight') }}" class="btn btn-primary" style="margin-bottom: 20px;">✈️ Schedule New Flight</a>
+<table>
+    <thead>
+        <tr>
+            <th>Flight ID</th><th>Jet</th><th>Route</th><th>Departure</th><th>Arrival</th><th>Passengers</th><th>Crew</th><th>Status</th><th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for flight in flights %}
+        <tr>
+            <td>{{ flight.flight_id }}</td>
+            <td>{{ flight.jet_id }}</td>
+            <td>{{ flight.departure }} → {{ flight.destination }}</td>
+            <td>{{ flight.departure_time }}</td>
+            <td>{{ flight.arrival_time }}</td>
+            <td>{{ flight.passenger_ids|length }}</td>
+            <td>{{ flight.crew_ids|length }}</td>
+            <td><span class="status-badge status-{{ flight.status.lower().replace(' ', '-') }}">{{ flight.status }}</span></td>
+            <td>
+                <a href="{{ url_for('view_flight', flight_id=flight.flight_id) }}" class="btn btn-primary">View</a>
+                <a href="{{ url_for('flight_trip_sheet', flight_id=flight.flight_id) }}" class="btn" target="_blank" title="Print Trip Sheet">📄</a>
+                <a href="{{ url_for('edit_flight', flight_id=flight.flight_id) }}" class="btn btn-success">Edit</a>
+                <form method="POST" action="{{ url_for('delete_flight', flight_id=flight.flight_id) }}" style="display:inline;" onsubmit="return confirm('Delete this flight?');">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

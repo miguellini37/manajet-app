@@ -79,6 +79,35 @@ Regenerates HTML templates (if templates directory is missing or corrupted).
 
 ## Deployment
 
+### Docker Deployment (Recommended)
+Quick deploy using automated script:
+```bash
+# Windows
+docker-deploy.bat
+
+# Mac/Linux
+./docker-deploy.sh
+```
+
+Or manually:
+```bash
+# Generate secret key
+python -c "import secrets; print(secrets.token_hex(32))"
+
+# Create .env file from template and add your SECRET_KEY
+cp .env.docker .env
+
+# Build and run
+docker-compose up -d
+
+# Initialize sample data
+docker-compose exec manajet python setup_initial_data.py
+```
+
+Access at `http://localhost:5000`
+
+See `DOCKER_DEPLOYMENT.md` for comprehensive Docker guide.
+
 ### Railway Deployment
 Quick deploy using automated script:
 ```bash
@@ -100,7 +129,7 @@ railway up
 railway domain
 ```
 
-See `RAILWAY_DEPLOYMENT.md` for comprehensive deployment guide.
+See `RAILWAY_DEPLOYMENT.md` for comprehensive Railway guide.
 
 ### Environment Variables
 Required for production:
