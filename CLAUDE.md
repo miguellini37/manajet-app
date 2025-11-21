@@ -131,6 +131,22 @@ railway domain
 
 See `RAILWAY_DEPLOYMENT.md` for comprehensive Railway guide.
 
+### DigitalOcean App Platform Deployment
+Deploy via web UI:
+1. Go to [cloud.digitalocean.com/apps](https://cloud.digitalocean.com/apps)
+2. Create App → Connect GitHub → Select repo
+3. Add environment variable: `SECRET_KEY` (generate with command above)
+4. Deploy (auto-detects Dockerfile)
+5. Access at your DigitalOcean URL
+
+Or use doctl CLI:
+```bash
+doctl auth init
+doctl apps create --spec .do/app.yaml
+```
+
+See `DIGITALOCEAN_DEPLOYMENT.md` for comprehensive guide.
+
 ### Environment Variables
 Required for production:
 - `SECRET_KEY`: Flask session secret (use `secrets.token_hex(32)`)
