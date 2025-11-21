@@ -91,13 +91,19 @@ class User:
 
 
 class Passenger:
-    """Represents a passenger with personal and passport information"""
+    """Represents a passenger with personal and passport information - APIS compliant"""
 
     def __init__(self, passenger_id: str, name: str, passport_number: str,
-                 nationality: str, passport_expiry: str, contact: str, customer_id: str = ""):
+                 nationality: str, passport_expiry: str, contact: str, customer_id: str = "",
+                 date_of_birth: str = "", gender: str = "", passport_country: str = "",
+                 middle_name: str = ""):
         self.passenger_id = passenger_id
         self.name = name
+        self.middle_name = middle_name  # APIS - Middle name(s)
+        self.date_of_birth = date_of_birth  # APIS - Required (YYYY-MM-DD format)
+        self.gender = gender  # APIS - Required (M/F/X)
         self.passport_number = passport_number
+        self.passport_country = passport_country  # APIS - Passport issuing country
         self.nationality = nationality
         self.passport_expiry = passport_expiry
         self.contact = contact
@@ -107,7 +113,11 @@ class Passenger:
         return {
             'passenger_id': self.passenger_id,
             'name': self.name,
+            'middle_name': self.middle_name,
+            'date_of_birth': self.date_of_birth,
+            'gender': self.gender,
             'passport_number': self.passport_number,
+            'passport_country': self.passport_country,
             'nationality': self.nationality,
             'passport_expiry': self.passport_expiry,
             'contact': self.contact,
@@ -123,13 +133,19 @@ class Passenger:
             data['nationality'],
             data['passport_expiry'],
             data['contact'],
-            data.get('customer_id', '')  # Backwards compatibility
+            data.get('customer_id', ''),  # Backwards compatibility
+            data.get('date_of_birth', ''),  # APIS fields with defaults
+            data.get('gender', ''),
+            data.get('passport_country', ''),
+            data.get('middle_name', '')
         )
 
     def __str__(self) -> str:
-        return (f"Passenger: {self.name} (ID: {self.passenger_id})\n"
+        full_name = f"{self.name} {self.middle_name}".strip() if self.middle_name else self.name
+        return (f"Passenger: {full_name} (ID: {self.passenger_id})\n"
+                f"  DOB: {self.date_of_birth} | Gender: {self.gender}\n"
                 f"  Passport: {self.passport_number} ({self.nationality})\n"
-                f"  Expiry: {self.passport_expiry}\n"
+                f"  Issued by: {self.passport_country} | Expiry: {self.passport_expiry}\n"
                 f"  Contact: {self.contact}\n"
                 f"  Customer ID: {self.customer_id}")
 
@@ -202,15 +218,20 @@ class PrivateJet:
 
 
 class CrewMember:
-    """Represents a crew member (pilot or cabin crew) with passport and license information"""
+    """Represents a crew member (pilot or cabin crew) with passport and license information - APIS compliant"""
 
     def __init__(self, crew_id: str, name: str, crew_type: str, passport_number: str,
                  nationality: str, passport_expiry: str, contact: str,
-                 license_number: Optional[str] = None):
+                 license_number: Optional[str] = None, date_of_birth: str = "",
+                 gender: str = "", passport_country: str = "", middle_name: str = ""):
         self.crew_id = crew_id
         self.name = name
+        self.middle_name = middle_name  # APIS - Middle name(s)
         self.crew_type = crew_type  # Pilot or Cabin Crew
+        self.date_of_birth = date_of_birth  # APIS - Required (YYYY-MM-DD format)
+        self.gender = gender  # APIS - Required (M/F/X)
         self.passport_number = passport_number
+        self.passport_country = passport_country  # APIS - Passport issuing country
         self.nationality = nationality
         self.passport_expiry = passport_expiry
         self.contact = contact
@@ -220,8 +241,12 @@ class CrewMember:
         return {
             'crew_id': self.crew_id,
             'name': self.name,
+            'middle_name': self.middle_name,
             'crew_type': self.crew_type,
+            'date_of_birth': self.date_of_birth,
+            'gender': self.gender,
             'passport_number': self.passport_number,
+            'passport_country': self.passport_country,
             'nationality': self.nationality,
             'passport_expiry': self.passport_expiry,
             'contact': self.contact,
@@ -238,14 +263,20 @@ class CrewMember:
             data['nationality'],
             data['passport_expiry'],
             data['contact'],
-            data.get('license_number')
+            data.get('license_number'),
+            data.get('date_of_birth', ''),  # APIS fields with defaults
+            data.get('gender', ''),
+            data.get('passport_country', ''),
+            data.get('middle_name', '')
         )
 
     def __str__(self) -> str:
-        result = (f"Crew Member: {self.name} (ID: {self.crew_id})\n"
+        full_name = f"{self.name} {self.middle_name}".strip() if self.middle_name else self.name
+        result = (f"Crew Member: {full_name} (ID: {self.crew_id})\n"
                  f"  Type: {self.crew_type}\n"
+                 f"  DOB: {self.date_of_birth} | Gender: {self.gender}\n"
                  f"  Passport: {self.passport_number} ({self.nationality})\n"
-                 f"  Expiry: {self.passport_expiry}\n"
+                 f"  Issued by: {self.passport_country} | Expiry: {self.passport_expiry}\n"
                  f"  Contact: {self.contact}")
         if self.license_number:
             result += f"\n  License: {self.license_number}"
@@ -571,8 +602,10 @@ class JetScheduleManager:
 
     # Passenger Management
     def add_passenger(self, passenger_id: str, name: str, passport_number: str,
-                     nationality: str, passport_expiry: str, contact: str, customer_id: str = "") -> str:
-        """Add a new passenger. Returns the passenger ID (auto-generated if empty)"""
+                     nationality: str, passport_expiry: str, contact: str, customer_id: str = "",
+                     date_of_birth: str = "", gender: str = "", passport_country: str = "",
+                     middle_name: str = "") -> str:
+        """Add a new passenger with APIS-compliant fields. Returns the passenger ID (auto-generated if empty)"""
         # Auto-generate ID if not provided or empty
         if not passenger_id or passenger_id.strip() == "":
             passenger_id = self.generate_passenger_id()
@@ -582,7 +615,8 @@ class JetScheduleManager:
             return ""
 
         passenger = Passenger(passenger_id, name, passport_number,
-                            nationality, passport_expiry, contact, customer_id)
+                            nationality, passport_expiry, contact, customer_id,
+                            date_of_birth, gender, passport_country, middle_name)
         self.passengers[passenger_id] = passenger
         print(f"Passenger {name} added successfully with ID: {passenger_id}")
         return passenger_id
@@ -592,14 +626,17 @@ class JetScheduleManager:
         return self.passengers.get(passenger_id)
 
     def update_passenger(self, passenger_id: str, name: str, passport_number: str,
-                        nationality: str, passport_expiry: str, contact: str, customer_id: str = "") -> bool:
-        """Update an existing passenger"""
+                        nationality: str, passport_expiry: str, contact: str, customer_id: str = "",
+                        date_of_birth: str = "", gender: str = "", passport_country: str = "",
+                        middle_name: str = "") -> bool:
+        """Update an existing passenger with APIS-compliant fields"""
         if passenger_id not in self.passengers:
             print(f"Error: Passenger ID {passenger_id} not found")
             return False
 
         self.passengers[passenger_id] = Passenger(passenger_id, name, passport_number,
-                                                  nationality, passport_expiry, contact, customer_id)
+                                                  nationality, passport_expiry, contact, customer_id,
+                                                  date_of_birth, gender, passport_country, middle_name)
         print(f"Passenger {passenger_id} updated successfully")
         return True
 

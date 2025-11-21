@@ -65,7 +65,7 @@ class StatusUpdater:
         if new_status != old_status:
             flight.status = new_status
             updated = True
-            print(f"✅ Flight {flight.flight_id}: {old_status} → {new_status}")
+            print(f"[OK] Flight {flight.flight_id}: {old_status} -> {new_status}")
 
         return updated
 
@@ -76,7 +76,7 @@ class StatusUpdater:
 
         # Parse dates
         scheduled_dt = self.parse_datetime(maintenance.scheduled_date)
-        completion_dt = self.parse_datetime(maintenance.completion_date)
+        completed_dt = self.parse_datetime(maintenance.completed_date)
 
         if not scheduled_dt:
             return False
@@ -84,9 +84,9 @@ class StatusUpdater:
         old_status = maintenance.status
 
         # Determine new status based on dates
-        if completion_dt and now >= completion_dt:
+        if completed_dt and now >= completed_dt:
             new_status = 'Completed'
-        elif now >= scheduled_dt and not completion_dt:
+        elif now >= scheduled_dt and not completed_dt:
             new_status = 'In Progress'
         else:
             new_status = maintenance.status
@@ -99,14 +99,14 @@ class StatusUpdater:
         if new_status != old_status:
             maintenance.status = new_status
             updated = True
-            print(f"✅ Maintenance {maintenance.maintenance_id}: {old_status} → {new_status}")
+            print(f"[OK] Maintenance {maintenance.maintenance_id}: {old_status} -> {new_status}")
 
         return updated
 
     def update_all_statuses(self):
         """Update all flights and maintenance statuses"""
-        print("\n🔄 Running automatic status updates...")
-        print(f"⏰ Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("\n[STATUS] Running automatic status updates...")
+        print(f"[TIME] Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
         flights_updated = 0
         maintenance_updated = 0
@@ -124,9 +124,9 @@ class StatusUpdater:
         # Save if any changes
         if flights_updated > 0 or maintenance_updated > 0:
             self.manager.save_data()
-            print(f"\n✨ Updated {flights_updated} flights and {maintenance_updated} maintenance records")
+            print(f"\n[DONE] Updated {flights_updated} flights and {maintenance_updated} maintenance records")
         else:
-            print("\nℹ️  No status updates needed")
+            print("\n[INFO] No status updates needed")
 
         return {
             'flights_updated': flights_updated,

@@ -3,7 +3,7 @@ Flask Web Application for Private Jet Schedule Management System
 Simple, lightweight web interface that works with existing code
 """
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session, send_file
 from jet_manager import JetScheduleManager
 from functools import wraps
 from datetime import datetime, timedelta
@@ -11,6 +11,8 @@ import hashlib
 import os
 from dotenv import load_dotenv
 from status_updater import create_scheduled_task
+from pdf_generator import pdf_generator
+from authlib.integrations.flask_client import OAuth
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +25,19 @@ app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'F
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = int(os.environ.get('PERMANENT_SESSION_LIFETIME', '3600'))
+
+# OAuth Configuration for Sign in with Apple
+oauth = OAuth(app)
+apple = oauth.register(
+    name='apple',
+    client_id=os.environ.get('APPLE_CLIENT_ID', ''),
+    client_secret=os.environ.get('APPLE_CLIENT_SECRET', ''),
+    server_metadata_url='https://appleid.apple.com/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'name email',
+        'response_mode': 'form_post'
+    }
+)
 
 # Initialize manager
 manager = JetScheduleManager()
@@ -138,6 +153,92 @@ def logout():
     session.clear()
     flash('You have been logged out', 'success')
     return redirect(url_for('login'))
+
+# ====================
+# APPLE OAUTH ROUTES
+# ====================
+
+@app.route('/login/apple')
+def login_apple():
+    """Initiate Apple OAuth login"""
+    redirect_uri = url_for('apple_callback', _external=True)
+    return apple.authorize_redirect(redirect_uri)
+
+@app.route('/auth/apple/callback', methods=['GET', 'POST'])
+def apple_callback():
+    """Handle Apple OAuth callback"""
+    try:
+        # Get the authorization token
+        token = apple.authorize_access_token()
+
+        # Parse the ID token to get user info
+        user_info = token.get('userinfo')
+        if not user_info:
+            # If userinfo not in token, decode id_token
+            id_token = token.get('id_token')
+            if id_token:
+                import jwt
+                user_info = jwt.decode(id_token, options={"verify_signature": False})
+
+        # Extract user details
+        apple_id = user_info.get('sub')  # Apple's unique user identifier
+        email = user_info.get('email', '')
+
+        # Check if user exists by email or create new user
+        user = None
+        for u in manager.users.values():
+            if u.email == email:
+                user = u
+                break
+
+        # If user doesn't exist, create a new customer account
+        if not user:
+            # Generate username from email
+            username = email.split('@')[0] if email else f'apple_user_{apple_id[:8]}'
+
+            # Create customer first
+            customer_id = manager.add_customer(
+                "",  # Auto-generate
+                username,
+                "",  # No company for individual
+                email,
+                "",  # No phone initially
+                ""   # No address initially
+            )
+
+            if customer_id:
+                # Create user account linked to customer
+                user_id = manager.add_user(
+                    "",  # Auto-generate
+                    username,
+                    "apple_oauth",  # Special password indicator
+                    "customer",
+                    customer_id,
+                    email
+                )
+
+                if user_id:
+                    user = manager.get_user(user_id)
+                    manager.save_data()
+                    flash(f'Welcome! New account created for {email}', 'success')
+                else:
+                    flash('Error creating user account', 'error')
+                    return redirect(url_for('login'))
+            else:
+                flash('Error creating customer account', 'error')
+                return redirect(url_for('login'))
+
+        # Log the user in
+        session['user_id'] = user.user_id
+        session['username'] = user.username
+        session['role'] = user.role
+        session['oauth_provider'] = 'apple'
+        flash(f'Welcome, {user.username}!', 'success')
+        return redirect(url_for('index'))
+
+    except Exception as e:
+        flash(f'Login failed: {str(e)}', 'error')
+        return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -500,6 +601,33 @@ def view_jet(jet_id):
     flash('Jet not found', 'error')
     return redirect(url_for('jets'))
 
+@app.route('/jets/<jet_id>/report.pdf')
+@login_required
+def download_aircraft_report(jet_id):
+    """Generate and download aircraft report PDF"""
+    jet = manager.get_jet(jet_id)
+    if not jet:
+        flash('Jet not found', 'error')
+        return redirect(url_for('jets'))
+
+    # Get related data
+    customer = None
+    if jet.customer_ids:
+        customer = manager.get_customer(jet.customer_ids[0])  # Primary customer
+    flights = [f for f in manager.flights.values() if f.jet_id == jet_id]
+    maintenance = [m for m in manager.maintenance.values() if m.jet_id == jet_id]
+
+    # Generate PDF
+    pdf_buffer = pdf_generator.generate_aircraft_report(jet, customer, flights, maintenance)
+
+    # Send file
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f'aircraft_report_{jet_id}.pdf'
+    )
+
 @app.route('/jets/<jet_id>/edit', methods=['GET', 'POST'])
 def edit_jet(jet_id):
     """Edit an existing jet"""
@@ -634,6 +762,31 @@ def view_flight(flight_id):
         return render_template('flight_detail.html', flight=flight, jet=jet, passengers=passengers, crew=crew)
     flash('Flight not found', 'error')
     return redirect(url_for('flights'))
+
+@app.route('/flights/<flight_id>/manifest.pdf')
+@login_required
+def download_flight_manifest(flight_id):
+    """Generate and download flight manifest PDF"""
+    flight = manager.get_flight(flight_id)
+    if not flight:
+        flash('Flight not found', 'error')
+        return redirect(url_for('flights'))
+
+    # Get related data
+    jet = manager.get_jet(flight.jet_id)
+    passengers = [manager.get_passenger(pid) for pid in flight.passenger_ids if manager.get_passenger(pid)]
+    crew = [manager.get_crew(cid) for cid in flight.crew_ids if manager.get_crew(cid)]
+
+    # Generate PDF
+    pdf_buffer = pdf_generator.generate_flight_manifest(flight, jet, passengers, crew)
+
+    # Send file
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f'flight_manifest_{flight_id}.pdf'
+    )
 
 @app.route('/flights/<flight_id>/trip-sheet')
 @login_required
@@ -1152,6 +1305,63 @@ def api_stats():
         'active_flights': len([f for f in manager.flights.values() if f.status == 'In Progress']),
         'available_jets': len([j for j in manager.jets.values() if j.status == 'Available']),
     })
+
+@app.route('/api/calendar/flights')
+@login_required
+def api_calendar_flights():
+    """Get flights in FullCalendar format"""
+    user = get_current_user()
+
+    # Filter flights based on user role
+    if user.role == 'customer':
+        customer_jets = [j.jet_id for j in manager.jets.values() if user.related_id in j.customer_ids]
+        flights = [f for f in manager.flights.values() if f.jet_id in customer_jets]
+    else:
+        flights = list(manager.flights.values())
+
+    # Convert to FullCalendar format
+    events = []
+    for flight in flights:
+        jet = manager.get_jet(flight.jet_id)
+
+        # Parse departure and arrival times
+        try:
+            # Handle both 'YYYY-MM-DD HH:MM' and 'YYYY-MM-DDThh:mm' formats
+            departure_str = flight.departure_time.replace(' ', 'T')
+            arrival_str = flight.arrival_time.replace(' ', 'T')
+
+            event = {
+                'id': flight.flight_id,
+                'title': f'{flight.departure} → {flight.destination}',
+                'start': departure_str,
+                'end': arrival_str,
+                'extendedProps': {
+                    'flight_id': flight.flight_id,
+                    'jet_id': flight.jet_id,
+                    'jet_model': jet.model if jet else 'Unknown',
+                    'departure': flight.departure,
+                    'destination': flight.destination,
+                    'status': flight.status,
+                    'passenger_count': len(flight.passenger_ids)
+                }
+            }
+            events.append(event)
+        except Exception as e:
+            # Skip flights with invalid date formats
+            continue
+
+    return jsonify(events)
+
+# ====================
+# CALENDAR VIEW
+# ====================
+
+@app.route('/calendar')
+@login_required
+def calendar():
+    """Flight calendar view"""
+    user = get_current_user()
+    return render_template('calendar.html', user=user)
 
 # ====================
 # ADMIN STATUS UPDATE ROUTE

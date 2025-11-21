@@ -190,6 +190,9 @@
       "model": "Challenger 350",
       "tail_number": "N808NX",
       "capacity": 8,
+      "customer_ids": [
+        "CUST003"
+      ],
       "customer_id": "CUST003",
       "status": "Available"
     },
@@ -198,6 +201,9 @@
       "model": "Gulfstream G650",
       "tail_number": "N123AB",
       "capacity": 14,
+      "customer_ids": [
+        "CUST001"
+      ],
       "customer_id": "CUST001",
       "status": "Available"
     },
@@ -206,6 +212,9 @@
       "model": "Bombardier Global 7500",
       "tail_number": "N456CD",
       "capacity": 17,
+      "customer_ids": [
+        "CUST001"
+      ],
       "customer_id": "CUST001",
       "status": "Available"
     },
@@ -214,6 +223,9 @@
       "model": "Cessna Citation X",
       "tail_number": "N789EF",
       "capacity": 12,
+      "customer_ids": [
+        "CUST002"
+      ],
       "customer_id": "CUST002",
       "status": "Available"
     }
@@ -263,7 +275,7 @@
       "scheduled_date": "2025-10-18",
       "maintenance_type": "Inspection",
       "description": "D check",
-      "status": "Scheduled",
+      "status": "In Progress",
       "completed_date": null
     }
   }

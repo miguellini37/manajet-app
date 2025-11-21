@@ -10,6 +10,7 @@
         <p><strong>Status:</strong> <span class="status-badge status-{{ jet.status.lower().replace(' ', '-') }}">{{ jet.status }}</span></p>
     </div>
     <div style="margin-top: 20px;">
+        <a href="{{ url_for('download_aircraft_report', jet_id=jet.jet_id) }}" class="btn btn-primary" style="margin-right: 10px;">📥 Download PDF Report</a>
         <a href="{{ url_for('aircraft_sheet', jet_id=jet.jet_id) }}" class="btn btn-primary" target="_blank" style="margin-right: 10px;">📄 Print Aircraft Sheet</a>
         <a href="{{ url_for('edit_jet', jet_id=jet.jet_id) }}" class="btn btn-success">Edit Jet</a>
         <form method="POST" action="{{ url_for('delete_jet', jet_id=jet.jet_id) }}" style="display:inline;" onsubmit="return confirm('Delete this jet? This cannot be undone.');">
