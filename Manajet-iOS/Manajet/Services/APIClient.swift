@@ -11,10 +11,9 @@ class APIClient: ObservableObject {
     static let shared = APIClient()
 
     // MARK: - Configuration
-    // Change this to your backend URL
-    // For local testing: "http://localhost:5000"
-    // For production: "https://your-backend-url.com"
-    private let baseURL = "http://localhost:5000"
+    // Backend URL is managed in Configuration.swift
+    // Change Configuration.current to switch between dev and production
+    private let baseURL = Configuration.baseURL
 
     @Published var isAuthenticated = false
     @Published var currentUser: User?
@@ -26,7 +25,11 @@ class APIClient: ObservableObject {
         config.httpCookieAcceptPolicy = .always
         config.httpShouldSetCookies = true
         config.httpCookieStorage = HTTPCookieStorage.shared
+        config.timeoutIntervalForRequest = Configuration.requestTimeout
         self.session = URLSession(configuration: config)
+
+        // Print configuration in debug mode
+        Configuration.printConfiguration()
     }
 
     // MARK: - Authentication
