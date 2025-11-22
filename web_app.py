@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from status_updater import create_scheduled_task
 from pdf_generator import pdf_generator
 from authlib.integrations.flask_client import OAuth
+from airport_utils import airport_db
 
 # Load environment variables
 load_dotenv()
@@ -44,6 +45,30 @@ manager = JetScheduleManager()
 
 # Initialize automatic status updater (runs every 5 minutes)
 status_updater = create_scheduled_task(manager, interval_minutes=5)
+
+# ====================
+# CONTEXT PROCESSORS
+# ====================
+
+@app.context_processor
+def inject_pending_approvals_count():
+    """Make pending approvals count available in all templates"""
+    def get_pending_approvals_count():
+        if 'user_id' not in session:
+            return 0
+
+        user = manager.get_user(session['user_id'])
+        if not user or user.role != 'crew':
+            return 0
+
+        crew_member = manager.get_crew(user.related_id) if user.related_id else None
+        if not crew_member or crew_member.crew_type != 'Pilot':
+            return 0
+
+        pending = manager.get_pending_approvals(crew_member.crew_id)
+        return len(pending)
+
+    return dict(pending_approvals_count=get_pending_approvals_count)
 
 # ====================
 # AUTH HELPERS
@@ -272,6 +297,119 @@ def register():
             flash('Error creating user account (username may already exist)', 'error')
 
     return render_template('register.html')
+
+# ====================
+# MOBILE API ENDPOINTS
+# ====================
+
+@app.route('/api/current-user')
+@login_required
+def api_current_user():
+    """Get current logged in user for mobile app"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    return jsonify({
+        'user_id': user.user_id,
+        'username': user.username,
+        'role': user.role,
+        'related_id': user.related_id,
+        'email': user.email if hasattr(user, 'email') else ''
+    })
+
+@app.route('/api/flights')
+@login_required
+def api_flights():
+    """Get all flights for current user (mobile)"""
+    user = get_current_user()
+
+    if user.role == 'customer':
+        customer_jets = [j.jet_id for j in manager.jets.values() if user.related_id in j.customer_ids]
+        flights = [f for f in manager.flights.values() if f.jet_id in customer_jets]
+    else:
+        flights = list(manager.flights.values())
+
+    return jsonify([f.to_dict() for f in flights])
+
+@app.route('/api/flights/schedule', methods=['POST'])
+@login_required
+def api_schedule_flight():
+    """Schedule a new flight via API (mobile)"""
+    user = get_current_user()
+    data = request.json
+
+    # Determine approval status based on user role
+    if user.role == 'customer':
+        approval_status = "Pending"
+    else:
+        approval_status = "Approved"
+
+    flight_id = manager.schedule_flight(
+        "",  # Auto-generate ID
+        data['jet_id'],
+        data['departure'],
+        data['destination'],
+        data['departure_time'],
+        data['arrival_time'],
+        data['passenger_ids'],
+        data['crew_ids'],
+        approval_status,
+        user.user_id
+    )
+
+    if flight_id:
+        manager.save_data()
+        return jsonify({'success': True, 'flight_id': flight_id})
+    else:
+        return jsonify({'success': False, 'error': 'Failed to schedule flight'}), 400
+
+@app.route('/api/approvals/pending')
+@role_required('crew')
+def api_pending_approvals():
+    """Get pending approvals for current pilot (mobile)"""
+    user = get_current_user()
+    crew_member = manager.get_crew(user.related_id) if user.related_id else None
+
+    if not crew_member or crew_member.crew_type != 'Pilot':
+        return jsonify({'error': 'Only pilots can access approvals'}), 403
+
+    pending = manager.get_pending_approvals(crew_member.crew_id)
+    return jsonify([f.to_dict() for f in pending])
+
+@app.route('/api/jets')
+@login_required
+def api_jets():
+    """Get all jets (mobile)"""
+    user = get_current_user()
+
+    if user.role == 'customer':
+        # Customers can see all jets for booking
+        jets = list(manager.jets.values())
+    else:
+        jets = list(manager.jets.values())
+
+    return jsonify([j.to_dict() for j in jets])
+
+@app.route('/api/passengers')
+@login_required
+def api_passengers():
+    """Get all passengers (mobile)"""
+    user = get_current_user()
+
+    if user.role == 'customer':
+        passengers = [p for p in manager.passengers.values() if p.customer_id == user.related_id]
+    else:
+        passengers = list(manager.passengers.values())
+
+    return jsonify([p.to_dict() for p in passengers])
+
+@app.route('/api/crew')
+@login_required
+def api_crew():
+    """Get all crew members (mobile)"""
+    crew_list = list(manager.crew.values())
+    return jsonify([c.to_dict() for c in crew_list])
 
 # ====================
 # DASHBOARD & HOME
@@ -712,6 +850,14 @@ def add_flight():
                                  maintenance_details=maintenance_details,
                                  form_data=request.form)
 
+        # Determine approval status based on user role
+        if user.role == 'customer':
+            approval_status = "Pending"
+            requested_by = user.user_id
+        else:
+            approval_status = "Approved"
+            requested_by = user.user_id
+
         flight_id = manager.schedule_flight(
             "",  # Auto-generate
             jet_id,
@@ -720,13 +866,27 @@ def add_flight():
             request.form['departure_time'],
             request.form['arrival_time'],
             passenger_ids,
-            crew_ids  # REQUIRED!
+            crew_ids,  # REQUIRED!
+            approval_status,
+            requested_by
         )
         if flight_id:
-            if override_maintenance:
-                flash(f'Flight scheduled successfully with ID: {flight_id} (Maintenance override applied)', 'success')
+            if user.role == 'customer':
+                # Notify customer that flight is pending approval
+                customer = manager.get_customer(user.related_id)
+                if customer and customer.lead_pilot_id:
+                    lead_pilot = manager.get_crew(customer.lead_pilot_id)
+                    if lead_pilot:
+                        flash(f'Flight request submitted successfully (ID: {flight_id}). Your lead pilot {lead_pilot.name} will review and approve it.', 'success')
+                    else:
+                        flash(f'Flight request submitted successfully (ID: {flight_id}). Pending pilot approval.', 'success')
+                else:
+                    flash(f'Flight request submitted successfully (ID: {flight_id}). Please contact your account manager to assign a lead pilot for approvals.', 'warning')
             else:
-                flash(f'Flight scheduled successfully with ID: {flight_id}', 'success')
+                if override_maintenance:
+                    flash(f'Flight scheduled successfully with ID: {flight_id} (Maintenance override applied)', 'success')
+                else:
+                    flash(f'Flight scheduled successfully with ID: {flight_id}', 'success')
             manager.save_data()
             return redirect(url_for('flights'))
         else:
@@ -934,6 +1094,89 @@ def update_flight_status(flight_id):
     return redirect(url_for('view_flight', flight_id=flight_id))
 
 # ====================
+# FLIGHT APPROVAL ROUTES
+# ====================
+
+@app.route('/approvals')
+@role_required('crew')
+def pending_approvals():
+    """View pending flight approvals (crew/pilots only)"""
+    user = get_current_user()
+
+    # Get crew member linked to this user
+    crew_member = manager.get_crew(user.related_id) if user.related_id else None
+
+    if not crew_member or crew_member.crew_type != 'Pilot':
+        flash('Only pilots can access flight approvals', 'error')
+        return redirect(url_for('index'))
+
+    # Get pending approvals for this pilot
+    pending_flights = manager.get_pending_approvals(crew_member.crew_id)
+
+    # Get flight details for display
+    flight_details = []
+    for flight in pending_flights:
+        jet = manager.get_jet(flight.jet_id)
+        passengers = [manager.get_passenger(pid) for pid in flight.passenger_ids if manager.get_passenger(pid)]
+        crew = [manager.get_crew(cid) for cid in flight.crew_ids if manager.get_crew(cid)]
+        requester = manager.get_user(flight.requested_by) if flight.requested_by else None
+
+        flight_details.append({
+            'flight': flight,
+            'jet': jet,
+            'passengers': passengers,
+            'crew': crew,
+            'requester': requester
+        })
+
+    return render_template('pending_approvals.html',
+                         flight_details=flight_details,
+                         user=user,
+                         crew_member=crew_member)
+
+@app.route('/flights/<flight_id>/approve', methods=['POST'])
+@role_required('crew')
+def approve_flight(flight_id):
+    """Approve a pending flight"""
+    user = get_current_user()
+
+    # Get crew member linked to this user
+    crew_member = manager.get_crew(user.related_id) if user.related_id else None
+
+    if not crew_member:
+        flash('Crew member not found', 'error')
+        return redirect(url_for('pending_approvals'))
+
+    if manager.approve_flight(flight_id, crew_member.crew_id):
+        flash(f'Flight {flight_id} approved successfully', 'success')
+        manager.save_data()
+    else:
+        flash('Error approving flight', 'error')
+
+    return redirect(url_for('pending_approvals'))
+
+@app.route('/flights/<flight_id>/reject', methods=['POST'])
+@role_required('crew')
+def reject_flight(flight_id):
+    """Reject a pending flight"""
+    user = get_current_user()
+
+    # Get crew member linked to this user
+    crew_member = manager.get_crew(user.related_id) if user.related_id else None
+
+    if not crew_member:
+        flash('Crew member not found', 'error')
+        return redirect(url_for('pending_approvals'))
+
+    if manager.reject_flight(flight_id, crew_member.crew_id):
+        flash(f'Flight {flight_id} rejected', 'warning')
+        manager.save_data()
+    else:
+        flash('Error rejecting flight', 'error')
+
+    return redirect(url_for('pending_approvals'))
+
+# ====================
 # MAINTENANCE ROUTES
 # ====================
 
@@ -1081,7 +1324,8 @@ def add_customer():
             request.form['company'],
             request.form['email'],
             request.form['phone'],
-            request.form['address']
+            request.form['address'],
+            request.form.get('lead_pilot_id', '')
         )
         if customer_id:
             flash(f'Customer added successfully with ID: {customer_id}', 'success')
@@ -1090,7 +1334,9 @@ def add_customer():
         else:
             flash('Error adding customer', 'error')
 
-    return render_template('customer_form.html', user=user)
+    # Get all pilots for dropdown
+    pilots = [c for c in manager.crew.values() if c.crew_type == 'Pilot']
+    return render_template('customer_form.html', user=user, pilots=pilots)
 
 @app.route('/customers/<customer_id>')
 @role_required('admin')
@@ -1144,7 +1390,8 @@ def edit_customer(customer_id):
             request.form['company'],
             request.form['email'],
             request.form['phone'],
-            request.form['address']
+            request.form['address'],
+            request.form.get('lead_pilot_id', '')
         )
         if success:
             flash(f'Customer {customer_id} updated successfully', 'success')
@@ -1153,7 +1400,9 @@ def edit_customer(customer_id):
         else:
             flash('Error updating customer', 'error')
 
-    return render_template('customer_form.html', customer=customer, edit_mode=True, user=user)
+    # Get all pilots for dropdown
+    pilots = [c for c in manager.crew.values() if c.crew_type == 'Pilot']
+    return render_template('customer_form.html', customer=customer, edit_mode=True, user=user, pilots=pilots)
 
 @app.route('/customers/<customer_id>/delete', methods=['POST'])
 @role_required('admin')
@@ -1351,6 +1600,76 @@ def api_calendar_flights():
             continue
 
     return jsonify(events)
+
+@app.route('/api/airports/search')
+def api_search_airports():
+    """Search airports by location (city, state, name, or code)"""
+    query = request.args.get('q', '')
+    limit = int(request.args.get('limit', 10))
+
+    if not query or len(query) < 2:
+        return jsonify({'results': []})
+
+    results = airport_db.search_airports(query, limit)
+
+    # Format results for frontend
+    formatted_results = []
+    for airport in results:
+        formatted_results.append({
+            'code': airport['code'],
+            'name': airport['name'],
+            'city': airport['city'],
+            'state': airport['state'],
+            'country': airport['country'],
+            'display': f"{airport['code']} - {airport['name']} ({airport['city']}, {airport['state']})"
+        })
+
+    return jsonify({'results': formatted_results})
+
+@app.route('/api/airports/distance')
+def api_airport_distance():
+    """Calculate distance between two airports"""
+    departure = request.args.get('departure', '').upper()
+    destination = request.args.get('destination', '').upper()
+
+    if not departure or not destination:
+        return jsonify({'error': 'Both departure and destination required'}), 400
+
+    distance = airport_db.calculate_distance(departure, destination)
+
+    if distance is None:
+        return jsonify({'error': 'One or both airports not found'}), 404
+
+    return jsonify({
+        'departure': departure,
+        'destination': destination,
+        'distance_miles': round(distance, 1)
+    })
+
+@app.route('/api/flights/estimate-duration')
+def api_estimate_flight_duration():
+    """Estimate flight duration between two airports"""
+    departure = request.args.get('departure', '').upper()
+    destination = request.args.get('destination', '').upper()
+
+    if not departure or not destination:
+        return jsonify({'error': 'Both departure and destination required'}), 400
+
+    duration = airport_db.estimate_flight_duration(departure, destination)
+
+    if duration is None:
+        return jsonify({'error': 'One or both airports not found'}), 404
+
+    hours, minutes = duration
+
+    return jsonify({
+        'departure': departure,
+        'destination': destination,
+        'duration_hours': hours,
+        'duration_minutes': minutes,
+        'duration_total_minutes': hours * 60 + minutes,
+        'duration_text': f"{hours}h {minutes}m"
+    })
 
 # ====================
 # CALENDAR VIEW

@@ -41,6 +41,22 @@
                       placeholder="123 Main St, New York, NY 10001">{{ customer.address if customer else '' }}</textarea>
         </div>
 
+        <div class="form-group">
+            <label for="lead_pilot_id">Lead Pilot (for flight approvals)</label>
+            <select id="lead_pilot_id" name="lead_pilot_id">
+                <option value="">-- No Lead Pilot Assigned --</option>
+                {% for pilot in pilots %}
+                    <option value="{{ pilot.crew_id }}"
+                            {% if customer and customer.lead_pilot_id == pilot.crew_id %}selected{% endif %}>
+                        {{ pilot.name }}{% if pilot.license_number %} (License: {{ pilot.license_number }}){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+            <small style="color: #666; margin-top: 5px; display: block;">
+                Lead pilot will receive and approve flight requests from this customer
+            </small>
+        </div>
+
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">
                 {{ 'Update Customer' if edit_mode else 'Create Customer' }}

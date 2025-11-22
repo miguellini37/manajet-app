@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Flight Approvals - Manajet{% endblock %}
+
+{% block content %}
+<h1>Pending Flight Approvals</h1>
+
+<p style="margin-bottom: 20px; color: #666;">
+    As Lead Pilot, you are responsible for approving flight requests from your assigned customers.
+</p>
+
+{% if flight_details %}
+    <div style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px;">
+        <strong>🔔 {{ flight_details|length }} flight(s) awaiting your approval</strong>
+    </div>
+
+    {% for item in flight_details %}
+    <div class="card" style="margin-bottom: 25px; border-left: 4px solid #ff9800;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+            <div>
+                <h2 style="margin: 0 0 10px 0; color: #2c3e50;">
+                    Flight {{ item.flight.flight_id }}
+                </h2>
+                <div style="font-size: 18px; color: #34495e; font-weight: 500;">
+                    {{ item.flight.departure }} → {{ item.flight.destination }}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <span class="badge badge-warning" style="font-size: 14px;">Pending Approval</span>
+            </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 20px;">
+            <div>
+                <h3 style="margin-bottom: 10px; font-size: 14px; color: #7f8c8d; text-transform: uppercase;">Flight Details</h3>
+                <table style="width: 100%; font-size: 14px;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #7f8c8d;">Departure:</td>
+                        <td style="padding: 8px 0; font-weight: 500;">{{ item.flight.departure_time }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #7f8c8d;">Arrival:</td>
+                        <td style="padding: 8px 0; font-weight: 500;">{{ item.flight.arrival_time }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #7f8c8d;">Aircraft:</td>
+                        <td style="padding: 8px 0; font-weight: 500;">
+                            {% if item.jet %}
+                                {{ item.jet.model }} ({{ item.jet.tail_number }})
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #7f8c8d;">Requested By:</td>
+                        <td style="padding: 8px 0; font-weight: 500;">
+                            {% if item.requester %}
+                                {{ item.requester.username }}
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div>
+                <h3 style="margin-bottom: 10px; font-size: 14px; color: #7f8c8d; text-transform: uppercase;">Passengers & Crew</h3>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #555;">Passengers ({{ item.passengers|length }}):</strong>
+                    <ul style="margin: 5px 0; padding-left: 20px; font-size: 14px;">
+                        {% for passenger in item.passengers %}
+                            <li>{{ passenger.name }}</li>
+                        {% else %}
+                            <li style="color: #999;">No passengers</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div>
+                    <strong style="color: #555;">Crew ({{ item.crew|length }}):</strong>
+                    <ul style="margin: 5px 0; padding-left: 20px; font-size: 14px;">
+                        {% for member in item.crew %}
+                            <li>{{ member.name }} - {{ member.crew_type }}</li>
+                        {% else %}
+                            <li style="color: #999;">No crew assigned</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid #ecf0f1; padding-top: 20px; display: flex; gap: 10px;">
+            <form method="POST" action="{{ url_for('approve_flight', flight_id=item.flight.flight_id) }}" style="flex: 1;">
+                <button type="submit" class="btn btn-success" style="width: 100%;">
+                    ✓ Approve Flight
+                </button>
+            </form>
+            <form method="POST" action="{{ url_for('reject_flight', flight_id=item.flight.flight_id) }}" style="flex: 1;"
+                  onsubmit="return confirm('Are you sure you want to reject this flight request?');">
+                <button type="submit" class="btn btn-danger" style="width: 100%;">
+                    ✗ Reject Flight
+                </button>
+            </form>
+            <a href="{{ url_for('view_flight', flight_id=item.flight.flight_id) }}" class="btn btn-secondary">
+                View Details
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+
+{% else %}
+    <div class="card" style="text-align: center; padding: 60px 20px; background: #f8f9fa;">
+        <div style="font-size: 48px; margin-bottom: 20px;">✓</div>
+        <h2 style="color: #27ae60; margin-bottom: 10px;">All Caught Up!</h2>
+        <p style="color: #7f8c8d;">No pending flight approvals at this time.</p>
+    </div>
+{% endif %}
+
+<div style="margin-top: 30px;">
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">← Back to Dashboard</a>
+    <a href="{{ url_for('flights') }}" class="btn btn-secondary">View All Flights</a>
+</div>
+
+{% endblock %}

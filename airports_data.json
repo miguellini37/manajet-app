@@ -1,0 +1,463 @@
+{
+  "airports": [
+    {
+      "code": "ATL",
+      "name": "Hartsfield-Jackson Atlanta International Airport",
+      "city": "Atlanta",
+      "state": "Georgia",
+      "country": "USA",
+      "lat": 33.6407,
+      "lon": -84.4277
+    },
+    {
+      "code": "LAX",
+      "name": "Los Angeles International Airport",
+      "city": "Los Angeles",
+      "state": "California",
+      "country": "USA",
+      "lat": 33.9416,
+      "lon": -118.4085
+    },
+    {
+      "code": "ORD",
+      "name": "O'Hare International Airport",
+      "city": "Chicago",
+      "state": "Illinois",
+      "country": "USA",
+      "lat": 41.9742,
+      "lon": -87.9073
+    },
+    {
+      "code": "DFW",
+      "name": "Dallas/Fort Worth International Airport",
+      "city": "Dallas",
+      "state": "Texas",
+      "country": "USA",
+      "lat": 32.8998,
+      "lon": -97.0403
+    },
+    {
+      "code": "DEN",
+      "name": "Denver International Airport",
+      "city": "Denver",
+      "state": "Colorado",
+      "country": "USA",
+      "lat": 39.8561,
+      "lon": -104.6737
+    },
+    {
+      "code": "JFK",
+      "name": "John F. Kennedy International Airport",
+      "city": "New York",
+      "state": "New York",
+      "country": "USA",
+      "lat": 40.6413,
+      "lon": -73.7781
+    },
+    {
+      "code": "SFO",
+      "name": "San Francisco International Airport",
+      "city": "San Francisco",
+      "state": "California",
+      "country": "USA",
+      "lat": 37.6213,
+      "lon": -122.3790
+    },
+    {
+      "code": "LAS",
+      "name": "McCarran International Airport",
+      "city": "Las Vegas",
+      "state": "Nevada",
+      "country": "USA",
+      "lat": 36.0840,
+      "lon": -115.1537
+    },
+    {
+      "code": "SEA",
+      "name": "Seattle-Tacoma International Airport",
+      "city": "Seattle",
+      "state": "Washington",
+      "country": "USA",
+      "lat": 47.4502,
+      "lon": -122.3088
+    },
+    {
+      "code": "MCO",
+      "name": "Orlando International Airport",
+      "city": "Orlando",
+      "state": "Florida",
+      "country": "USA",
+      "lat": 28.4312,
+      "lon": -81.3081
+    },
+    {
+      "code": "MIA",
+      "name": "Miami International Airport",
+      "city": "Miami",
+      "state": "Florida",
+      "country": "USA",
+      "lat": 25.7959,
+      "lon": -80.2870
+    },
+    {
+      "code": "PHX",
+      "name": "Phoenix Sky Harbor International Airport",
+      "city": "Phoenix",
+      "state": "Arizona",
+      "country": "USA",
+      "lat": 33.4352,
+      "lon": -112.0101
+    },
+    {
+      "code": "IAH",
+      "name": "George Bush Intercontinental Airport",
+      "city": "Houston",
+      "state": "Texas",
+      "country": "USA",
+      "lat": 29.9902,
+      "lon": -95.3368
+    },
+    {
+      "code": "BOS",
+      "name": "Logan International Airport",
+      "city": "Boston",
+      "state": "Massachusetts",
+      "country": "USA",
+      "lat": 42.3656,
+      "lon": -71.0096
+    },
+    {
+      "code": "MSP",
+      "name": "Minneapolis-St. Paul International Airport",
+      "city": "Minneapolis",
+      "state": "Minnesota",
+      "country": "USA",
+      "lat": 44.8848,
+      "lon": -93.2223
+    },
+    {
+      "code": "DTW",
+      "name": "Detroit Metropolitan Wayne County Airport",
+      "city": "Detroit",
+      "state": "Michigan",
+      "country": "USA",
+      "lat": 42.2162,
+      "lon": -83.3554
+    },
+    {
+      "code": "PHL",
+      "name": "Philadelphia International Airport",
+      "city": "Philadelphia",
+      "state": "Pennsylvania",
+      "country": "USA",
+      "lat": 39.8744,
+      "lon": -75.2424
+    },
+    {
+      "code": "LGA",
+      "name": "LaGuardia Airport",
+      "city": "New York",
+      "state": "New York",
+      "country": "USA",
+      "lat": 40.7769,
+      "lon": -73.8740
+    },
+    {
+      "code": "EWR",
+      "name": "Newark Liberty International Airport",
+      "city": "Newark",
+      "state": "New Jersey",
+      "country": "USA",
+      "lat": 40.6895,
+      "lon": -74.1745
+    },
+    {
+      "code": "CLT",
+      "name": "Charlotte Douglas International Airport",
+      "city": "Charlotte",
+      "state": "North Carolina",
+      "country": "USA",
+      "lat": 35.2144,
+      "lon": -80.9473
+    },
+    {
+      "code": "SAN",
+      "name": "San Diego International Airport",
+      "city": "San Diego",
+      "state": "California",
+      "country": "USA",
+      "lat": 32.7336,
+      "lon": -117.1897
+    },
+    {
+      "code": "TPA",
+      "name": "Tampa International Airport",
+      "city": "Tampa",
+      "state": "Florida",
+      "country": "USA",
+      "lat": 27.9755,
+      "lon": -82.5332
+    },
+    {
+      "code": "PDX",
+      "name": "Portland International Airport",
+      "city": "Portland",
+      "state": "Oregon",
+      "country": "USA",
+      "lat": 45.5898,
+      "lon": -122.5951
+    },
+    {
+      "code": "HNL",
+      "name": "Daniel K. Inouye International Airport",
+      "city": "Honolulu",
+      "state": "Hawaii",
+      "country": "USA",
+      "lat": 21.3187,
+      "lon": -157.9225
+    },
+    {
+      "code": "AUS",
+      "name": "Austin-Bergstrom International Airport",
+      "city": "Austin",
+      "state": "Texas",
+      "country": "USA",
+      "lat": 30.1945,
+      "lon": -97.6699
+    },
+    {
+      "code": "BNA",
+      "name": "Nashville International Airport",
+      "city": "Nashville",
+      "state": "Tennessee",
+      "country": "USA",
+      "lat": 36.1263,
+      "lon": -86.6774
+    },
+    {
+      "code": "IAD",
+      "name": "Washington Dulles International Airport",
+      "city": "Washington",
+      "state": "D.C.",
+      "country": "USA",
+      "lat": 38.9531,
+      "lon": -77.4565
+    },
+    {
+      "code": "DCA",
+      "name": "Ronald Reagan Washington National Airport",
+      "city": "Washington",
+      "state": "D.C.",
+      "country": "USA",
+      "lat": 38.8521,
+      "lon": -77.0377
+    },
+    {
+      "code": "STL",
+      "name": "St. Louis Lambert International Airport",
+      "city": "St. Louis",
+      "state": "Missouri",
+      "country": "USA",
+      "lat": 38.7487,
+      "lon": -90.3700
+    },
+    {
+      "code": "SLC",
+      "name": "Salt Lake City International Airport",
+      "city": "Salt Lake City",
+      "state": "Utah",
+      "country": "USA",
+      "lat": 40.7899,
+      "lon": -111.9791
+    },
+    {
+      "code": "RDU",
+      "name": "Raleigh-Durham International Airport",
+      "city": "Raleigh/Durham",
+      "state": "North Carolina",
+      "country": "USA",
+      "lat": 35.8801,
+      "lon": -78.7880
+    },
+    {
+      "code": "SMF",
+      "name": "Sacramento International Airport",
+      "city": "Sacramento",
+      "state": "California",
+      "country": "USA",
+      "lat": 38.6954,
+      "lon": -121.5908
+    },
+    {
+      "code": "SNA",
+      "name": "John Wayne Airport",
+      "city": "Santa Ana/Orange County",
+      "state": "California",
+      "country": "USA",
+      "lat": 33.6762,
+      "lon": -117.8679
+    },
+    {
+      "code": "MEM",
+      "name": "Memphis International Airport",
+      "city": "Memphis",
+      "state": "Tennessee",
+      "country": "USA",
+      "lat": 35.0424,
+      "lon": -89.9767
+    },
+    {
+      "code": "OAK",
+      "name": "Oakland International Airport",
+      "city": "Oakland",
+      "state": "California",
+      "country": "USA",
+      "lat": 37.7126,
+      "lon": -122.2197
+    },
+    {
+      "code": "SJC",
+      "name": "Norman Y. Mineta San Jose International Airport",
+      "city": "San Jose",
+      "state": "California",
+      "country": "USA",
+      "lat": 37.3639,
+      "lon": -121.9289
+    },
+    {
+      "code": "BUR",
+      "name": "Hollywood Burbank Airport",
+      "city": "Burbank",
+      "state": "California",
+      "country": "USA",
+      "lat": 34.2007,
+      "lon": -118.3587
+    },
+    {
+      "code": "PBI",
+      "name": "Palm Beach International Airport",
+      "city": "West Palm Beach",
+      "state": "Florida",
+      "country": "USA",
+      "lat": 26.6832,
+      "lon": -80.0956
+    },
+    {
+      "code": "FLL",
+      "name": "Fort Lauderdale-Hollywood International Airport",
+      "city": "Fort Lauderdale",
+      "state": "Florida",
+      "country": "USA",
+      "lat": 26.0742,
+      "lon": -80.1506
+    },
+    {
+      "code": "RSW",
+      "name": "Southwest Florida International Airport",
+      "city": "Fort Myers",
+      "state": "Florida",
+      "country": "USA",
+      "lat": 26.5362,
+      "lon": -81.7552
+    },
+    {
+      "code": "CLE",
+      "name": "Cleveland Hopkins International Airport",
+      "city": "Cleveland",
+      "state": "Ohio",
+      "country": "USA",
+      "lat": 41.4117,
+      "lon": -81.8498
+    },
+    {
+      "code": "CVG",
+      "name": "Cincinnati/Northern Kentucky International Airport",
+      "city": "Cincinnati",
+      "state": "Kentucky/Ohio",
+      "country": "USA",
+      "lat": 39.0533,
+      "lon": -84.6630
+    },
+    {
+      "code": "IND",
+      "name": "Indianapolis International Airport",
+      "city": "Indianapolis",
+      "state": "Indiana",
+      "country": "USA",
+      "lat": 39.7173,
+      "lon": -86.2944
+    },
+    {
+      "code": "CMH",
+      "name": "John Glenn Columbus International Airport",
+      "city": "Columbus",
+      "state": "Ohio",
+      "country": "USA",
+      "lat": 39.9980,
+      "lon": -82.8919
+    },
+    {
+      "code": "PIT",
+      "name": "Pittsburgh International Airport",
+      "city": "Pittsburgh",
+      "state": "Pennsylvania",
+      "country": "USA",
+      "lat": 40.4915,
+      "lon": -80.2329
+    },
+    {
+      "code": "MCI",
+      "name": "Kansas City International Airport",
+      "city": "Kansas City",
+      "state": "Missouri",
+      "country": "USA",
+      "lat": 39.2976,
+      "lon": -94.7139
+    },
+    {
+      "code": "OMA",
+      "name": "Eppley Airfield",
+      "city": "Omaha",
+      "state": "Nebraska",
+      "country": "USA",
+      "lat": 41.3032,
+      "lon": -95.8941
+    },
+    {
+      "code": "ABQ",
+      "name": "Albuquerque International Sunport",
+      "city": "Albuquerque",
+      "state": "New Mexico",
+      "country": "USA",
+      "lat": 35.0402,
+      "lon": -106.6092
+    },
+    {
+      "code": "ELP",
+      "name": "El Paso International Airport",
+      "city": "El Paso",
+      "state": "Texas",
+      "country": "USA",
+      "lat": 31.8072,
+      "lon": -106.3778
+    },
+    {
+      "code": "TUS",
+      "name": "Tucson International Airport",
+      "city": "Tucson",
+      "state": "Arizona",
+      "country": "USA",
+      "lat": 32.1161,
+      "lon": -110.9410
+    },
+    {
+      "code": "BOI",
+      "name": "Boise Airport",
+      "city": "Boise",
+      "state": "Idaho",
+      "country": "USA",
+      "lat": 43.5644,
+      "lon": -116.2228
+    }
+  ]
+}

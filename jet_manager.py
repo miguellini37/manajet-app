@@ -13,13 +13,14 @@ class Customer:
     """Represents a customer who owns one or more jets"""
 
     def __init__(self, customer_id: str, name: str, company: str,
-                 email: str, phone: str, address: str):
+                 email: str, phone: str, address: str, lead_pilot_id: str = ""):
         self.customer_id = customer_id
         self.name = name
         self.company = company
         self.email = email
         self.phone = phone
         self.address = address
+        self.lead_pilot_id = lead_pilot_id  # Crew ID of assigned lead pilot for approvals
 
     def to_dict(self) -> Dict:
         return {
@@ -28,7 +29,8 @@ class Customer:
             'company': self.company,
             'email': self.email,
             'phone': self.phone,
-            'address': self.address
+            'address': self.address,
+            'lead_pilot_id': self.lead_pilot_id
         }
 
     @classmethod
@@ -39,15 +41,19 @@ class Customer:
             data['company'],
             data['email'],
             data['phone'],
-            data['address']
+            data['address'],
+            data.get('lead_pilot_id', '')  # Backwards compatibility
         )
 
     def __str__(self) -> str:
-        return (f"Customer: {self.name} (ID: {self.customer_id})\n"
+        result = (f"Customer: {self.name} (ID: {self.customer_id})\n"
                 f"  Company: {self.company}\n"
                 f"  Email: {self.email}\n"
                 f"  Phone: {self.phone}\n"
                 f"  Address: {self.address}")
+        if self.lead_pilot_id:
+            result += f"\n  Lead Pilot ID: {self.lead_pilot_id}"
+        return result
 
 
 class User:
@@ -284,12 +290,13 @@ class CrewMember:
 
 
 class Flight:
-    """Represents a scheduled flight"""
+    """Represents a scheduled flight with approval workflow"""
 
     def __init__(self, flight_id: str, jet_id: str, departure: str,
                  destination: str, departure_time: str, arrival_time: str,
                  passenger_ids: List[str], crew_ids: List[str],
-                 status: str = "Scheduled"):
+                 status: str = "Scheduled", approval_status: str = "Approved",
+                 requested_by: str = "", approved_by: str = "", approval_date: str = ""):
         self.flight_id = flight_id
         self.jet_id = jet_id
         self.departure = departure
@@ -299,6 +306,10 @@ class Flight:
         self.passenger_ids = passenger_ids
         self.crew_ids = crew_ids
         self.status = status  # Scheduled, In Progress, Completed, Cancelled
+        self.approval_status = approval_status  # Pending, Approved, Rejected
+        self.requested_by = requested_by  # User ID who created the flight
+        self.approved_by = approved_by  # Crew ID who approved
+        self.approval_date = approval_date  # Timestamp of approval
 
     def to_dict(self) -> Dict:
         return {
@@ -310,7 +321,11 @@ class Flight:
             'arrival_time': self.arrival_time,
             'passenger_ids': self.passenger_ids,
             'crew_ids': self.crew_ids,
-            'status': self.status
+            'status': self.status,
+            'approval_status': self.approval_status,
+            'requested_by': self.requested_by,
+            'approved_by': self.approved_by,
+            'approval_date': self.approval_date
         }
 
     @classmethod
@@ -324,17 +339,25 @@ class Flight:
             data['arrival_time'],
             data['passenger_ids'],
             data.get('crew_ids', []),  # Backwards compatibility
-            data.get('status', 'Scheduled')
+            data.get('status', 'Scheduled'),
+            data.get('approval_status', 'Approved'),  # Default to approved for existing flights
+            data.get('requested_by', ''),
+            data.get('approved_by', ''),
+            data.get('approval_date', '')
         )
 
     def __str__(self) -> str:
-        return (f"Flight: {self.flight_id} - {self.status}\n"
+        result = (f"Flight: {self.flight_id} - {self.status}\n"
                 f"  Route: {self.departure} → {self.destination}\n"
                 f"  Departure: {self.departure_time}\n"
                 f"  Arrival: {self.arrival_time}\n"
                 f"  Jet ID: {self.jet_id}\n"
                 f"  Passengers: {len(self.passenger_ids)}\n"
-                f"  Crew Members: {len(self.crew_ids)}")
+                f"  Crew Members: {len(self.crew_ids)}\n"
+                f"  Approval Status: {self.approval_status}")
+        if self.approved_by:
+            result += f"\n  Approved By: {self.approved_by}"
+        return result
 
 
 class MaintenanceRecord:
@@ -531,7 +554,7 @@ class JetScheduleManager:
 
     # Customer Management
     def add_customer(self, customer_id: str, name: str, company: str,
-                    email: str, phone: str, address: str) -> str:
+                    email: str, phone: str, address: str, lead_pilot_id: str = "") -> str:
         """Add a new customer. Returns the customer ID (auto-generated if empty)"""
         if not customer_id or customer_id.strip() == "":
             customer_id = self.generate_customer_id()
@@ -540,7 +563,7 @@ class JetScheduleManager:
             print(f"Error: Customer ID {customer_id} already exists")
             return ""
 
-        customer = Customer(customer_id, name, company, email, phone, address)
+        customer = Customer(customer_id, name, company, email, phone, address, lead_pilot_id)
         self.customers[customer_id] = customer
         print(f"Customer {name} added successfully with ID: {customer_id}")
         return customer_id
@@ -550,13 +573,13 @@ class JetScheduleManager:
         return self.customers.get(customer_id)
 
     def update_customer(self, customer_id: str, name: str, company: str,
-                       email: str, phone: str, address: str) -> bool:
+                       email: str, phone: str, address: str, lead_pilot_id: str = "") -> bool:
         """Update an existing customer"""
         if customer_id not in self.customers:
             print(f"Error: Customer ID {customer_id} not found")
             return False
 
-        self.customers[customer_id] = Customer(customer_id, name, company, email, phone, address)
+        self.customers[customer_id] = Customer(customer_id, name, company, email, phone, address, lead_pilot_id)
         print(f"Customer {customer_id} updated successfully")
         return True
 
@@ -828,7 +851,8 @@ class JetScheduleManager:
     # Flight Management
     def schedule_flight(self, flight_id: str, jet_id: str, departure: str,
                        destination: str, departure_time: str, arrival_time: str,
-                       passenger_ids: List[str], crew_ids: List[str]) -> str:
+                       passenger_ids: List[str], crew_ids: List[str],
+                       approval_status: str = "Approved", requested_by: str = "") -> str:
         """Schedule a new flight. Returns the flight ID (auto-generated if empty)"""
         # Auto-generate ID if not provided or empty
         if not flight_id or flight_id.strip() == "":
@@ -890,9 +914,14 @@ class JetScheduleManager:
                 return ""
 
         flight = Flight(flight_id, jet_id, departure, destination,
-                       departure_time, arrival_time, passenger_ids, crew_ids)
+                       departure_time, arrival_time, passenger_ids, crew_ids,
+                       "Scheduled", approval_status, requested_by)
         self.flights[flight_id] = flight
-        print(f"Flight {flight_id} scheduled successfully with {len(crew_ids)} crew member(s)")
+
+        if approval_status == "Pending":
+            print(f"Flight {flight_id} created and pending approval")
+        else:
+            print(f"Flight {flight_id} scheduled successfully with {len(crew_ids)} crew member(s)")
         return flight_id
 
     def update_flight(self, flight_id: str, jet_id: str, departure: str,
@@ -928,6 +957,83 @@ class JetScheduleManager:
         del self.flights[flight_id]
         print(f"Flight {flight_id} deleted successfully")
         return True
+
+    def approve_flight(self, flight_id: str, approved_by: str) -> bool:
+        """Approve a pending flight"""
+        if flight_id not in self.flights:
+            print(f"Error: Flight ID {flight_id} not found")
+            return False
+
+        flight = self.flights[flight_id]
+
+        if flight.approval_status == "Approved":
+            print(f"Flight {flight_id} is already approved")
+            return False
+
+        # Verify approver is a pilot
+        if approved_by not in self.crew:
+            print(f"Error: Crew ID {approved_by} not found")
+            return False
+
+        approver = self.crew[approved_by]
+        if approver.crew_type != "Pilot":
+            print(f"Error: Only pilots can approve flights")
+            return False
+
+        # Approve the flight
+        flight.approval_status = "Approved"
+        flight.approved_by = approved_by
+        flight.approval_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        print(f"Flight {flight_id} approved by {approver.name}")
+        return True
+
+    def reject_flight(self, flight_id: str, rejected_by: str) -> bool:
+        """Reject a pending flight"""
+        if flight_id not in self.flights:
+            print(f"Error: Flight ID {flight_id} not found")
+            return False
+
+        flight = self.flights[flight_id]
+
+        # Verify rejector is a pilot
+        if rejected_by not in self.crew:
+            print(f"Error: Crew ID {rejected_by} not found")
+            return False
+
+        rejector = self.crew[rejected_by]
+        if rejector.crew_type != "Pilot":
+            print(f"Error: Only pilots can reject flights")
+            return False
+
+        # Reject the flight
+        flight.approval_status = "Rejected"
+        flight.approved_by = rejected_by
+        flight.approval_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        print(f"Flight {flight_id} rejected by {rejector.name}")
+        return True
+
+    def get_pending_approvals(self, pilot_crew_id: str = None) -> List[Flight]:
+        """Get all flights pending approval, optionally filtered by pilot"""
+        pending = [f for f in self.flights.values() if f.approval_status == "Pending"]
+
+        if pilot_crew_id:
+            # Filter by lead pilot responsibility
+            filtered = []
+            for flight in pending:
+                # Get the jet to find customer
+                jet = self.get_jet(flight.jet_id)
+                if jet and jet.customer_ids:
+                    # Check if this pilot is lead pilot for any of the jet's customers
+                    for customer_id in jet.customer_ids:
+                        customer = self.get_customer(customer_id)
+                        if customer and customer.lead_pilot_id == pilot_crew_id:
+                            filtered.append(flight)
+                            break
+            return filtered
+
+        return pending
 
     def get_flight(self, flight_id: str) -> Optional[Flight]:
         """Get flight by ID"""

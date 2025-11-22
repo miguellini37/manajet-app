@@ -4,7 +4,7 @@ region: nyc
 services:
 - name: web
   github:
-    repo: mikemanajet/manajet-app-1
+    repo: miguellini37/manajet-app
     branch: master
     deploy_on_push: true
 

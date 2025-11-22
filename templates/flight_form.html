@@ -48,23 +48,58 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Departure Airport *</label>
-                    <input type="text" name="departure" value="{{ form_data.get('departure') if form_data else (flight.departure if flight else '') }}" required placeholder="e.g., JFK, LAX, ORD">
+                    <label>Departure Location *</label>
+                    <input type="text"
+                           id="departure_search"
+                           autocomplete="off"
+                           value="{{ form_data.get('departure') if form_data else (flight.departure if flight else '') }}"
+                           placeholder="Type city name or airport code (e.g., Los Angeles, JFK)">
+                    <input type="hidden" name="departure" id="departure" required>
+                    <div id="departure_suggestions" class="autocomplete-suggestions"></div>
+                    <small id="departure_info" style="color: #666; display: none;"></small>
                 </div>
 
                 <div class="form-group">
-                    <label>Destination Airport *</label>
-                    <input type="text" name="destination" value="{{ form_data.get('destination') if form_data else (flight.destination if flight else '') }}" required placeholder="e.g., MIA, DFW, ATL">
+                    <label>Destination Location *</label>
+                    <input type="text"
+                           id="destination_search"
+                           autocomplete="off"
+                           value="{{ form_data.get('destination') if form_data else (flight.destination if flight else '') }}"
+                           placeholder="Type city name or airport code (e.g., Miami, DFW)">
+                    <input type="hidden" name="destination" id="destination" required>
+                    <div id="destination_suggestions" class="autocomplete-suggestions"></div>
+                    <small id="destination_info" style="color: #666; display: none;"></small>
                 </div>
 
                 <div class="form-group">
+                    <label>Time Selection Method</label>
+                    <div style="display: flex; gap: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="time_method" value="depart_at" id="time_method_depart" checked style="margin-right: 8px;">
+                            <span>I know when I want to depart</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="time_method" value="arrive_by" id="time_method_arrive" style="margin-right: 8px;">
+                            <span>I know when I need to arrive</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="departure_time_group">
                     <label>Departure Time *</label>
-                    <input type="datetime-local" name="departure_time" value="{{ form_data.get('departure_time') if form_data else (flight.departure_time.replace(' ', 'T') if flight else '') }}" required>
+                    <input type="datetime-local" id="departure_time_input" value="{{ form_data.get('departure_time') if form_data else (flight.departure_time.replace(' ', 'T') if flight else '') }}">
+                    <input type="hidden" name="departure_time" id="departure_time" required>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="arrival_time_group" style="display: none;">
                     <label>Arrival Time *</label>
-                    <input type="datetime-local" name="arrival_time" value="{{ form_data.get('arrival_time') if form_data else (flight.arrival_time.replace(' ', 'T') if flight else '') }}" required>
+                    <input type="datetime-local" id="arrival_time_input" value="{{ form_data.get('arrival_time') if form_data else (flight.arrival_time.replace(' ', 'T') if flight else '') }}">
+                    <input type="hidden" name="arrival_time" id="arrival_time" required>
+                </div>
+
+                <div id="flight_duration_info" style="padding: 15px; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 5px; margin-bottom: 15px; display: none;">
+                    <strong style="color: #2e7d32;">Flight Information:</strong>
+                    <div id="duration_display" style="margin-top: 8px; color: #1b5e20;"></div>
                 </div>
 
                 {% if flight %}
@@ -181,7 +216,55 @@
 {% endblock %}
 
 {% block extra_js %}
+<style>
+    .autocomplete-suggestions {
+        position: absolute;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        width: calc(100% - 2px);
+        display: none;
+    }
+
+    .autocomplete-suggestion {
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .autocomplete-suggestion:hover {
+        background: #f8f9fa;
+    }
+
+    .autocomplete-suggestion:last-child {
+        border-bottom: none;
+    }
+
+    .suggestion-code {
+        font-weight: bold;
+        color: #2c3e50;
+        font-size: 14px;
+    }
+
+    .suggestion-name {
+        color: #7f8c8d;
+        font-size: 13px;
+        margin-top: 2px;
+    }
+</style>
+
 <script>
+    // Airport autocomplete state
+    let departureTimeout = null;
+    let destinationTimeout = null;
+    let selectedDeparture = null;
+    let selectedDestination = null;
+    let flightDuration = null;
+
     // Update passenger count
     function updatePassengerCount() {
         const select = document.getElementById('passengers');
@@ -199,6 +282,187 @@
             } else {
                 warning.style.display = 'none';
             }
+        }
+    }
+
+    // Airport search with autocomplete
+    async function searchAirports(query, callback) {
+        if (query.length < 2) {
+            callback([]);
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/airports/search?q=${encodeURIComponent(query)}&limit=10`);
+            const data = await response.json();
+            callback(data.results || []);
+        } catch (error) {
+            console.error('Airport search error:', error);
+            callback([]);
+        }
+    }
+
+    // Show autocomplete suggestions
+    function showSuggestions(inputId, suggestionsId, results) {
+        const suggestionsDiv = document.getElementById(suggestionsId);
+        suggestionsDiv.innerHTML = '';
+
+        if (results.length === 0) {
+            suggestionsDiv.style.display = 'none';
+            return;
+        }
+
+        results.forEach(airport => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-suggestion';
+            div.innerHTML = `
+                <div class="suggestion-code">${airport.code}</div>
+                <div class="suggestion-name">${airport.name} (${airport.city}, ${airport.state})</div>
+            `;
+            div.onclick = () => selectAirport(inputId, suggestionsId, airport);
+            suggestionsDiv.appendChild(div);
+        });
+
+        suggestionsDiv.style.display = 'block';
+    }
+
+    // Select an airport from suggestions
+    function selectAirport(inputId, suggestionsId, airport) {
+        const searchInput = document.getElementById(inputId);
+        const hiddenInput = document.getElementById(inputId.replace('_search', ''));
+        const infoDiv = document.getElementById(inputId.replace('_search', '_info'));
+
+        searchInput.value = airport.code;
+        hiddenInput.value = airport.code;
+        infoDiv.textContent = `${airport.name} (${airport.city}, ${airport.state})`;
+        infoDiv.style.display = 'block';
+
+        document.getElementById(suggestionsId).style.display = 'none';
+
+        // Store selected airport
+        if (inputId === 'departure_search') {
+            selectedDeparture = airport.code;
+        } else {
+            selectedDestination = airport.code;
+        }
+
+        // Calculate flight duration if both airports are selected
+        calculateFlightDuration();
+    }
+
+    // Setup autocomplete for an input
+    function setupAutocomplete(searchInputId, hiddenInputId, suggestionsId) {
+        const searchInput = document.getElementById(searchInputId);
+        let timeout = null;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timeout);
+            const query = this.value;
+
+            timeout = setTimeout(() => {
+                searchAirports(query, (results) => {
+                    showSuggestions(searchInputId, suggestionsId, results);
+                });
+            }, 300);
+        });
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest(`#${searchInputId}`) && !e.target.closest(`#${suggestionsId}`)) {
+                document.getElementById(suggestionsId).style.display = 'none';
+            }
+        });
+    }
+
+    // Calculate flight duration
+    async function calculateFlightDuration() {
+        if (!selectedDeparture || !selectedDestination) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/flights/estimate-duration?departure=${selectedDeparture}&destination=${selectedDestination}`);
+            const data = await response.json();
+
+            if (data.error) {
+                console.error('Duration calculation error:', data.error);
+                return;
+            }
+
+            flightDuration = data.duration_total_minutes;
+
+            // Show flight info
+            const infoDiv = document.getElementById('flight_duration_info');
+            const displayDiv = document.getElementById('duration_display');
+            displayDiv.innerHTML = `
+                <div><strong>Estimated Flight Time:</strong> ${data.duration_text}</div>
+                <div style="margin-top: 5px;"><strong>Route:</strong> ${selectedDeparture} → ${selectedDestination}</div>
+            `;
+            infoDiv.style.display = 'block';
+
+            // Recalculate times if needed
+            updateCalculatedTime();
+        } catch (error) {
+            console.error('Duration calculation error:', error);
+        }
+    }
+
+    // Toggle time input method
+    function toggleTimeMethod() {
+        const method = document.querySelector('input[name="time_method"]:checked').value;
+        const departureGroup = document.getElementById('departure_time_group');
+        const arrivalGroup = document.getElementById('arrival_time_group');
+
+        if (method === 'depart_at') {
+            departureGroup.style.display = 'block';
+            arrivalGroup.style.display = 'none';
+            document.getElementById('departure_time_input').required = true;
+            document.getElementById('arrival_time_input').required = false;
+        } else {
+            departureGroup.style.display = 'none';
+            arrivalGroup.style.display = 'block';
+            document.getElementById('departure_time_input').required = false;
+            document.getElementById('arrival_time_input').required = true;
+        }
+
+        updateCalculatedTime();
+    }
+
+    // Calculate the other time based on selected method
+    function updateCalculatedTime() {
+        if (!flightDuration) {
+            return;
+        }
+
+        const method = document.querySelector('input[name="time_method"]:checked').value;
+        const departureInput = document.getElementById('departure_time_input');
+        const arrivalInput = document.getElementById('arrival_time_input');
+        const departureHidden = document.getElementById('departure_time');
+        const arrivalHidden = document.getElementById('arrival_time');
+
+        if (method === 'depart_at' && departureInput.value) {
+            // Calculate arrival time
+            const departureDate = new Date(departureInput.value);
+            const arrivalDate = new Date(departureDate.getTime() + flightDuration * 60000);
+
+            const arrivalStr = arrivalDate.toISOString().slice(0, 16);
+            arrivalInput.value = arrivalStr;
+
+            // Set hidden fields
+            departureHidden.value = departureInput.value;
+            arrivalHidden.value = arrivalStr;
+
+        } else if (method === 'arrive_by' && arrivalInput.value) {
+            // Calculate departure time
+            const arrivalDate = new Date(arrivalInput.value);
+            const departureDate = new Date(arrivalDate.getTime() - flightDuration * 60000);
+
+            const departureStr = departureDate.toISOString().slice(0, 16);
+            departureInput.value = departureStr;
+
+            // Set hidden fields
+            departureHidden.value = departureStr;
+            arrivalHidden.value = arrivalInput.value;
         }
     }
 
@@ -240,8 +504,39 @@
     document.getElementById('crew').addEventListener('change', validateCrew);
     document.getElementById('jet_id').addEventListener('change', updatePassengerCount);
 
+    // Time method toggle listeners
+    document.getElementById('time_method_depart').addEventListener('change', toggleTimeMethod);
+    document.getElementById('time_method_arrive').addEventListener('change', toggleTimeMethod);
+
+    // Time input listeners for calculation
+    document.getElementById('departure_time_input').addEventListener('change', updateCalculatedTime);
+    document.getElementById('arrival_time_input').addEventListener('change', updateCalculatedTime);
+
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
+        // Setup autocomplete for both airport fields
+        setupAutocomplete('departure_search', 'departure', 'departure_suggestions');
+        setupAutocomplete('destination_search', 'destination', 'destination_suggestions');
+
+        // Initialize existing values if editing
+        const departureSearch = document.getElementById('departure_search');
+        const destinationSearch = document.getElementById('destination_search');
+
+        if (departureSearch.value) {
+            selectedDeparture = departureSearch.value;
+            document.getElementById('departure').value = departureSearch.value;
+        }
+
+        if (destinationSearch.value) {
+            selectedDestination = destinationSearch.value;
+            document.getElementById('destination').value = destinationSearch.value;
+        }
+
+        // Calculate duration if both are set
+        if (selectedDeparture && selectedDestination) {
+            calculateFlightDuration();
+        }
+
         updatePassengerCount();
         validateCrew();
     });

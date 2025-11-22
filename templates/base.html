@@ -159,6 +159,30 @@
             width: 100%;
         }
 
+        .notification-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
         main {
             padding: 48px 48px 80px 48px;
             min-height: calc(100vh - 200px);
@@ -713,6 +737,16 @@
                 <li><a href="{{ url_for('crew') }}">Crew</a></li>
                 <li><a href="{{ url_for('jets') }}">Aircraft</a></li>
                 <li><a href="{{ url_for('flights') }}">Flights</a></li>
+                {% if session.get('role') == 'crew' %}
+                <li>
+                    <a href="{{ url_for('pending_approvals') }}" style="position: relative;">
+                        Approvals
+                        {% if pending_approvals_count() > 0 %}
+                        <span class="notification-badge">{{ pending_approvals_count() }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                {% endif %}
                 <li><a href="{{ url_for('calendar') }}">Calendar</a></li>
                 <li><a href="{{ url_for('maintenance') }}">Maintenance</a></li>
                 {% if session.get('role') == 'admin' %}
