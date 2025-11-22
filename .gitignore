@@ -48,3 +48,23 @@ test_*.py
 
 # Environment variables
 .env
+
+# Apple Developer Keys (SENSITIVE - DO NOT COMMIT)
+AuthKey_*.p8
+*.p8
+*.mobileprovision
+*.cer
+*.p12
+
+# iOS Build artifacts
+*.xcworkspace/
+*.xcodeproj/
+!*.xcodeproj/project.pbxproj
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Windows temp files
+nul
