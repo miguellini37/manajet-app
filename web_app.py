@@ -29,18 +29,23 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = int(os.environ.get('PERMANENT_SESSION_LIFETIME', '3600'))
 
-# OAuth Configuration for Sign in with Apple
+# OAuth Configuration for Sign in with Apple (Web only)
+# Only initialize if credentials are provided
 oauth = OAuth(app)
-apple = oauth.register(
-    name='apple',
-    client_id=os.environ.get('APPLE_CLIENT_ID', ''),
-    client_secret=os.environ.get('APPLE_CLIENT_SECRET', ''),
-    server_metadata_url='https://appleid.apple.com/.well-known/openid-configuration',
-    client_kwargs={
-        'scope': 'name email',
-        'response_mode': 'form_post'
-    }
-)
+if os.environ.get('APPLE_CLIENT_ID') and os.environ.get('APPLE_CLIENT_SECRET'):
+    apple = oauth.register(
+        name='apple',
+        client_id=os.environ.get('APPLE_CLIENT_ID'),
+        client_secret=os.environ.get('APPLE_CLIENT_SECRET'),
+        server_metadata_url='https://appleid.apple.com/.well-known/openid-configuration',
+        client_kwargs={
+            'scope': 'name email',
+            'response_mode': 'form_post'
+        }
+    )
+else:
+    apple = None
+    print("⚠️  Apple OAuth not configured - web login disabled, iOS native login still works")
 
 # Initialize manager
 manager = JetScheduleManager()
@@ -187,13 +192,19 @@ def logout():
 
 @app.route('/login/apple')
 def login_apple():
-    """Initiate Apple OAuth login"""
+    """Initiate Apple OAuth login (web only)"""
+    if not apple:
+        flash('Apple Sign In is not configured on this server. Please use the iOS app.', 'error')
+        return redirect(url_for('login'))
     redirect_uri = url_for('apple_callback', _external=True)
     return apple.authorize_redirect(redirect_uri)
 
 @app.route('/auth/apple/callback', methods=['GET', 'POST'])
 def apple_callback():
-    """Handle Apple OAuth callback"""
+    """Handle Apple OAuth callback (web only)"""
+    if not apple:
+        flash('Apple Sign In is not configured on this server.', 'error')
+        return redirect(url_for('login'))
     try:
         # Get the authorization token
         token = apple.authorize_access_token()
