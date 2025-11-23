@@ -370,15 +370,25 @@ def api_apple_signin():
                 return jsonify({'success': False, 'message': 'Error creating customer account'}), 500
 
         # Log the user in by creating a session
+        session.clear()  # Clear any existing session
         session['user_id'] = user.user_id
         session['username'] = user.username
         session['role'] = user.role
         session['oauth_provider'] = 'apple'
         session.permanent = True
+        session.modified = True  # Force session to save
 
+        # Return user data directly instead of requiring another request
         return jsonify({
             'success': True,
-            'message': 'Login successful'
+            'message': 'Login successful',
+            'user': {
+                'user_id': user.user_id,
+                'username': user.username,
+                'role': user.role,
+                'related_id': user.related_id,
+                'email': user.email if hasattr(user, 'email') else ''
+            }
         }), 200
 
     except Exception as e:
