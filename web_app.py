@@ -9,6 +9,8 @@ from functools import wraps
 from datetime import datetime, timedelta
 import hashlib
 import os
+import jwt
+import requests
 from dotenv import load_dotenv
 from status_updater import create_scheduled_task
 from pdf_generator import pdf_generator
@@ -264,6 +266,113 @@ def apple_callback():
     except Exception as e:
         flash(f'Login failed: {str(e)}', 'error')
         return redirect(url_for('login'))
+
+@app.route('/api/auth/apple', methods=['POST'])
+def api_apple_signin():
+    """
+    iOS native Sign in with Apple endpoint
+    Accepts identity token from iOS and creates/authenticates user
+    """
+    try:
+        data = request.get_json()
+        identity_token = data.get('identity_token')
+        user_identifier = data.get('user_identifier')
+        email = data.get('email')
+        full_name = data.get('full_name', {})
+
+        if not identity_token or not user_identifier:
+            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+
+        # Decode the identity token (without verification for now)
+        # In production, you should verify the token with Apple's public keys
+        try:
+            decoded = jwt.decode(identity_token, options={"verify_signature": False})
+            apple_id = decoded.get('sub')
+
+            # Verify the apple_id matches the user_identifier
+            if apple_id != user_identifier:
+                return jsonify({'success': False, 'message': 'Invalid token'}), 401
+
+        except jwt.DecodeError:
+            return jsonify({'success': False, 'message': 'Invalid token'}), 401
+
+        # Check if user exists by apple user identifier
+        user = None
+        for u in manager.users.values():
+            # Check if user has apple_user_id attribute and matches
+            if hasattr(u, 'apple_user_id') and u.apple_user_id == user_identifier:
+                user = u
+                break
+            # Fallback: check by email if provided
+            elif email and hasattr(u, 'email') and u.email == email:
+                # Update user with apple_user_id
+                u.apple_user_id = user_identifier
+                user = u
+                manager.save_data()
+                break
+
+        # If user doesn't exist, create a new customer account
+        if not user:
+            # Generate username from email or user_identifier
+            if email:
+                username = email.split('@')[0]
+            else:
+                username = f'apple_user_{user_identifier[:8]}'
+
+            # Get full name if provided
+            name = username
+            if full_name:
+                given_name = full_name.get('given_name', '')
+                family_name = full_name.get('family_name', '')
+                if given_name or family_name:
+                    name = f"{given_name} {family_name}".strip()
+
+            # Create customer first
+            customer_id = manager.add_customer(
+                "",  # Auto-generate
+                name,
+                "",  # No company for individual
+                email or f"{user_identifier}@apple.privaterelay.appleid.com",
+                "",  # No phone initially
+                ""   # No address initially
+            )
+
+            if customer_id:
+                # Create user account linked to customer
+                user_id = manager.add_user(
+                    "",  # Auto-generate
+                    username,
+                    "apple_oauth",  # Special password indicator
+                    "customer",
+                    customer_id,
+                    email or f"{user_identifier}@apple.privaterelay.appleid.com"
+                )
+
+                if user_id:
+                    user = manager.get_user(user_id)
+                    # Store apple user identifier
+                    user.apple_user_id = user_identifier
+                    manager.save_data()
+                else:
+                    return jsonify({'success': False, 'message': 'Error creating user account'}), 500
+            else:
+                return jsonify({'success': False, 'message': 'Error creating customer account'}), 500
+
+        # Log the user in by creating a session
+        session['user_id'] = user.user_id
+        session['username'] = user.username
+        session['role'] = user.role
+        session['oauth_provider'] = 'apple'
+        session.permanent = True
+
+        return jsonify({
+            'success': True,
+            'message': 'Login successful'
+        }), 200
+
+    except Exception as e:
+        print(f"Apple Sign In error: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():

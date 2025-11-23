@@ -9,6 +9,7 @@ Flask-Login==0.6.3  # For user authentication
 python-dotenv==1.0.0  # For environment variables
 authlib==1.3.0  # OAuth for Sign in with Apple/Google/etc
 PyJWT==2.8.0  # For decoding Apple ID tokens
+cryptography==41.0.7  # For Apple token verification
 
 # Database - PostgreSQL (production)
 psycopg2-binary==2.9.9  # PostgreSQL adapter
