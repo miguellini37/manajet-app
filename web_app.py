@@ -7,25 +7,48 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from jet_manager import JetScheduleManager
 from functools import wraps
 from datetime import datetime, timedelta
-import hashlib
 import os
+import bcrypt
 from dotenv import load_dotenv
 from status_updater import create_scheduled_task
 from pdf_generator import pdf_generator
 from authlib.integrations.flask_client import OAuth
 from airport_utils import airport_db
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 
-# Production-ready configuration
-app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
+# Production-ready configuration - REQUIRE secret key in production
+secret_key = os.environ.get('SECRET_KEY')
+if not secret_key:
+    if os.environ.get('FLASK_ENV') == 'production' or os.environ.get('DEBUG', 'True') == 'False':
+        raise RuntimeError("SECRET_KEY environment variable must be set in production!")
+    secret_key = 'dev-secret-key-not-for-production'
+    print("WARNING: Using development secret key. Set SECRET_KEY env var for production.")
+
+app.secret_key = secret_key
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'False') == 'True'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = int(os.environ.get('PERMANENT_SESSION_LIFETIME', '3600'))
+
+# CSRF Protection
+app.config['WTF_CSRF_ENABLED'] = True
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
+csrf = CSRFProtect(app)
+
+# Rate Limiting
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 # OAuth Configuration for Sign in with Apple
 oauth = OAuth(app)
@@ -75,8 +98,20 @@ def inject_pending_approvals_count():
 # ====================
 
 def hash_password(password: str) -> str:
-    """Simple password hashing"""
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Secure password hashing with bcrypt"""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verify password against bcrypt hash"""
+    try:
+        # Handle legacy SHA-256 hashes (64 hex chars) for migration
+        if len(password_hash) == 64 and all(c in '0123456789abcdef' for c in password_hash):
+            import hashlib
+            return hashlib.sha256(password.encode()).hexdigest() == password_hash
+        # Verify bcrypt hash
+        return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+    except Exception:
+        return False
 
 def login_required(f):
     """Decorator to require login"""
@@ -153,15 +188,19 @@ def auto_update_statuses():
 # ====================
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")  # Rate limit login attempts
 def login():
     """User login"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        password_hash = hash_password(password)
 
         user = manager.get_user_by_username(username)
-        if user and user.password_hash == password_hash:
+        if user and verify_password(password, user.password_hash):
+            # Upgrade legacy SHA-256 hash to bcrypt on successful login
+            if len(user.password_hash) == 64:
+                user.password_hash = hash_password(password)
+                manager.save_data()
             session['user_id'] = user.user_id
             session['username'] = user.username
             session['role'] = user.role
@@ -193,17 +232,19 @@ def login_apple():
 def apple_callback():
     """Handle Apple OAuth callback"""
     try:
-        # Get the authorization token
+        # Get the authorization token - authlib handles verification
         token = apple.authorize_access_token()
 
         # Parse the ID token to get user info
+        # authlib's authorize_access_token() already validates the token
         user_info = token.get('userinfo')
         if not user_info:
-            # If userinfo not in token, decode id_token
+            # If userinfo not in token, use authlib's parse_id_token which verifies signature
             id_token = token.get('id_token')
             if id_token:
-                import jwt
-                user_info = jwt.decode(id_token, options={"verify_signature": False})
+                # Use authlib's built-in verification instead of manual jwt.decode
+                # This properly verifies the signature against Apple's public keys
+                user_info = apple.parse_id_token(token)
 
         # Extract user details
         apple_id = user_info.get('sub')  # Apple's unique user identifier
@@ -262,10 +303,14 @@ def apple_callback():
         return redirect(url_for('index'))
 
     except Exception as e:
-        flash(f'Login failed: {str(e)}', 'error')
+        # Log the actual error server-side, show generic message to user
+        import logging
+        logging.error(f'Apple OAuth login failed: {str(e)}')
+        flash('Login failed. Please try again or use username/password login.', 'error')
         return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per hour")  # Rate limit registration
 def register():
     """User registration (creates customer account)"""
     if request.method == 'POST':
@@ -301,9 +346,12 @@ def register():
 # ====================
 # MOBILE API ENDPOINTS
 # ====================
+# Note: CSRF is exempt for API routes that use session-based auth
+# In production, consider implementing token-based auth (JWT) for mobile
 
 @app.route('/api/current-user')
 @login_required
+@limiter.limit("60 per minute")
 def api_current_user():
     """Get current logged in user for mobile app"""
     user = get_current_user()
@@ -320,6 +368,7 @@ def api_current_user():
 
 @app.route('/api/flights')
 @login_required
+@limiter.limit("60 per minute")
 def api_flights():
     """Get all flights for current user (mobile)"""
     user = get_current_user()
@@ -334,6 +383,8 @@ def api_flights():
 
 @app.route('/api/flights/schedule', methods=['POST'])
 @login_required
+@csrf.exempt  # API endpoint - uses session auth, exempt from CSRF
+@limiter.limit("10 per minute")
 def api_schedule_flight():
     """Schedule a new flight via API (mobile)"""
     user = get_current_user()
@@ -574,6 +625,7 @@ def add_passenger():
     return render_template('passenger_form.html', user=user, customers=customers)
 
 @app.route('/passengers/<passenger_id>')
+@login_required
 def view_passenger(passenger_id):
     """View passenger details"""
     passenger = manager.get_passenger(passenger_id)
@@ -583,6 +635,7 @@ def view_passenger(passenger_id):
     return redirect(url_for('passengers'))
 
 @app.route('/passengers/<passenger_id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_passenger(passenger_id):
     """Edit an existing passenger"""
     passenger = manager.get_passenger(passenger_id)
@@ -609,6 +662,7 @@ def edit_passenger(passenger_id):
     return render_template('passenger_form.html', passenger=passenger, edit_mode=True)
 
 @app.route('/passengers/<passenger_id>/delete', methods=['POST'])
+@login_required
 def delete_passenger(passenger_id):
     """Delete a passenger"""
     if manager.delete_passenger(passenger_id):
@@ -623,11 +677,13 @@ def delete_passenger(passenger_id):
 # ====================
 
 @app.route('/crew')
+@login_required
 def crew():
     """List all crew members"""
     return render_template('crew.html', crew=manager.crew.values())
 
 @app.route('/crew/add', methods=['GET', 'POST'])
+@login_required
 def add_crew():
     """Add a new crew member"""
     if request.method == 'POST':
@@ -651,6 +707,7 @@ def add_crew():
     return render_template('crew_form.html')
 
 @app.route('/crew/<crew_id>')
+@login_required
 def view_crew(crew_id):
     """View crew member details"""
     crew_member = manager.get_crew(crew_id)
@@ -662,6 +719,7 @@ def view_crew(crew_id):
     return redirect(url_for('crew'))
 
 @app.route('/crew/<crew_id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_crew(crew_id):
     """Edit an existing crew member"""
     crew_member = manager.get_crew(crew_id)
@@ -690,6 +748,7 @@ def edit_crew(crew_id):
     return render_template('crew_form.html', crew=crew_member, edit_mode=True)
 
 @app.route('/crew/<crew_id>/delete', methods=['POST'])
+@login_required
 def delete_crew(crew_id):
     """Delete a crew member"""
     if manager.delete_crew(crew_id):
@@ -704,11 +763,13 @@ def delete_crew(crew_id):
 # ====================
 
 @app.route('/jets')
+@login_required
 def jets():
     """List all jets"""
     return render_template('jets.html', jets=manager.jets.values())
 
 @app.route('/jets/add', methods=['GET', 'POST'])
+@login_required
 def add_jet():
     """Add a new jet"""
     if request.method == 'POST':
@@ -729,6 +790,7 @@ def add_jet():
     return render_template('jet_form.html')
 
 @app.route('/jets/<jet_id>')
+@login_required
 def view_jet(jet_id):
     """View jet schedule and details"""
     jet = manager.get_jet(jet_id)
@@ -767,6 +829,7 @@ def download_aircraft_report(jet_id):
     )
 
 @app.route('/jets/<jet_id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_jet(jet_id):
     """Edit an existing jet"""
     jet = manager.get_jet(jet_id)
@@ -792,6 +855,7 @@ def edit_jet(jet_id):
     return render_template('jet_form.html', jet=jet, edit_mode=True)
 
 @app.route('/jets/<jet_id>/delete', methods=['POST'])
+@login_required
 def delete_jet(jet_id):
     """Delete a jet"""
     if manager.delete_jet(jet_id):
@@ -806,6 +870,7 @@ def delete_jet(jet_id):
 # ====================
 
 @app.route('/flights')
+@login_required
 def flights():
     """List all flights"""
     return render_template('flights.html', flights=manager.flights.values())
@@ -912,6 +977,7 @@ def add_flight():
                          user=user)
 
 @app.route('/flights/<flight_id>')
+@login_required
 def view_flight(flight_id):
     """View flight details"""
     flight = manager.get_flight(flight_id)
@@ -1037,6 +1103,7 @@ def aircraft_sheet(jet_id):
                          current_time=current_time)
 
 @app.route('/flights/<flight_id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_flight(flight_id):
     """Edit an existing flight"""
     flight = manager.get_flight(flight_id)
@@ -1073,6 +1140,7 @@ def edit_flight(flight_id):
                          edit_mode=True)
 
 @app.route('/flights/<flight_id>/delete', methods=['POST'])
+@login_required
 def delete_flight(flight_id):
     """Delete a flight"""
     if manager.delete_flight(flight_id):
@@ -1083,6 +1151,7 @@ def delete_flight(flight_id):
     return redirect(url_for('flights'))
 
 @app.route('/flights/<flight_id>/update-status', methods=['POST'])
+@login_required
 def update_flight_status(flight_id):
     """Update flight status"""
     new_status = request.form['status']
@@ -1221,6 +1290,7 @@ def add_maintenance():
     return render_template('maintenance_form.html', jets=manager.jets.values(), user=user)
 
 @app.route('/maintenance/<maintenance_id>')
+@login_required
 def view_maintenance(maintenance_id):
     """View maintenance details"""
     maint = manager.maintenance.get(maintenance_id)

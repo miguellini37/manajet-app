@@ -5,12 +5,12 @@ Run this ONCE after setting up the application
 """
 
 from jet_manager import JetScheduleManager
-import hashlib
+import bcrypt
 import os
 
 def hash_password(password: str) -> str:
-    """Simple password hashing"""
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Secure password hashing with bcrypt"""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def setup():
     """Create initial data"""
