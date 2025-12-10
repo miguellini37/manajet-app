@@ -7,6 +7,10 @@ from datetime import datetime
 from typing import Dict, List
 import json
 import os
+import logging
+from date_utils import parse_datetime
+
+logger = logging.getLogger(__name__)
 
 class StatusUpdater:
     """Automatically update status based on time"""
@@ -14,37 +18,14 @@ class StatusUpdater:
     def __init__(self, manager):
         self.manager = manager
 
-    def parse_datetime(self, date_string: str) -> datetime:
-        """Parse datetime from various formats"""
-        if not date_string:
-            return None
-
-        formats = [
-            '%Y-%m-%d %H:%M:%S',
-            '%Y-%m-%d %H:%M',
-            '%Y-%m-%d',
-            '%m/%d/%Y %H:%M',
-            '%m/%d/%Y',
-            '%d/%m/%Y %H:%M',
-            '%d/%m/%Y',
-        ]
-
-        for fmt in formats:
-            try:
-                return datetime.strptime(date_string, fmt)
-            except:
-                continue
-
-        return None
-
     def update_flight_status(self, flight):
         """Update single flight status based on time"""
         now = datetime.now()
         updated = False
 
         # Parse times
-        departure_dt = self.parse_datetime(flight.departure_time)
-        arrival_dt = self.parse_datetime(flight.arrival_time)
+        departure_dt = parse_datetime(flight.departure_time)
+        arrival_dt = parse_datetime(flight.arrival_time)
 
         if not departure_dt or not arrival_dt:
             return False
@@ -65,7 +46,7 @@ class StatusUpdater:
         if new_status != old_status:
             flight.status = new_status
             updated = True
-            print(f"[OK] Flight {flight.flight_id}: {old_status} -> {new_status}")
+            logger.info(f"Flight {flight.flight_id}: {old_status} -> {new_status}")
 
         return updated
 
@@ -75,8 +56,8 @@ class StatusUpdater:
         updated = False
 
         # Parse dates
-        scheduled_dt = self.parse_datetime(maintenance.scheduled_date)
-        completed_dt = self.parse_datetime(maintenance.completed_date)
+        scheduled_dt = parse_datetime(maintenance.scheduled_date)
+        completed_dt = parse_datetime(maintenance.completed_date)
 
         if not scheduled_dt:
             return False
@@ -99,14 +80,14 @@ class StatusUpdater:
         if new_status != old_status:
             maintenance.status = new_status
             updated = True
-            print(f"[OK] Maintenance {maintenance.maintenance_id}: {old_status} -> {new_status}")
+            logger.info(f"Maintenance {maintenance.maintenance_id}: {old_status} -> {new_status}")
 
         return updated
 
     def update_all_statuses(self):
         """Update all flights and maintenance statuses"""
-        print("\n[STATUS] Running automatic status updates...")
-        print(f"[TIME] Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info("Running automatic status updates...")
+        logger.info(f"Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
         flights_updated = 0
         maintenance_updated = 0
@@ -124,9 +105,9 @@ class StatusUpdater:
         # Save if any changes
         if flights_updated > 0 or maintenance_updated > 0:
             self.manager.save_data()
-            print(f"\n[DONE] Updated {flights_updated} flights and {maintenance_updated} maintenance records")
+            logger.info(f"Updated {flights_updated} flights and {maintenance_updated} maintenance records")
         else:
-            print("\n[INFO] No status updates needed")
+            logger.info("No status updates needed")
 
         return {
             'flights_updated': flights_updated,
@@ -143,7 +124,7 @@ class StatusUpdater:
         }
 
         for flight in self.manager.flights.values():
-            departure_dt = self.parse_datetime(flight.departure_time)
+            departure_dt = parse_datetime(flight.departure_time)
             if departure_dt:
                 time_diff = (departure_dt - now).total_seconds() / 3600
                 if 0 < time_diff <= hours:
@@ -156,7 +137,7 @@ class StatusUpdater:
                     })
 
         for maint in self.manager.maintenance.values():
-            scheduled_dt = self.parse_datetime(maint.scheduled_date)
+            scheduled_dt = parse_datetime(maint.scheduled_date)
             if scheduled_dt and maint.status != 'Completed':
                 time_diff = (scheduled_dt - now).total_seconds() / 3600
                 if 0 < time_diff <= hours:

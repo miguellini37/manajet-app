@@ -1,0 +1,65 @@
+<!-- Pagination Component -->
+{% if pagination and pagination.pages > 1 %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 32px; padding: 24px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+    <div style="color: #64748b; font-size: 14px;">
+        Showing {{ ((pagination.page - 1) * pagination.per_page + 1) }} to {{ min(pagination.page * pagination.per_page, pagination.total) }} of {{ pagination.total }} items
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+        <!-- Previous Button -->
+        {% if pagination.has_prev %}
+            <a href="?page={{ pagination.prev_num }}"
+               style="padding: 8px 16px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; color: #475569; font-weight: 500; transition: all 0.2s;">
+                ← Previous
+            </a>
+        {% else %}
+            <span style="padding: 8px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; color: #cbd5e1; font-weight: 500;">
+                ← Previous
+            </span>
+        {% endif %}
+
+        <!-- Page Numbers -->
+        {% for page_num in pagination.iter_pages() %}
+            {% if page_num %}
+                {% if page_num == pagination.page %}
+                    <span style="padding: 8px 16px; background: #6366f1; color: white; border-radius: 8px; font-weight: 600;">
+                        {{ page_num }}
+                    </span>
+                {% else %}
+                    <a href="?page={{ page_num }}"
+                       style="padding: 8px 16px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; color: #475569; font-weight: 500; transition: all 0.2s;">
+                        {{ page_num }}
+                    </a>
+                {% endif %}
+            {% else %}
+                <span style="padding: 8px 16px; color: #cbd5e1;">...</span>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Next Button -->
+        {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}"
+               style="padding: 8px 16px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; color: #475569; font-weight: 500; transition: all 0.2s;">
+                Next →
+            </a>
+        {% else %}
+            <span style="padding: 8px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; color: #cbd5e1; font-weight: 500;">
+                Next →
+            </span>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    @media (max-width: 768px) {
+        div[style*="justify-content: space-between"] {
+            flex-direction: column;
+            gap: 16px;
+        }
+        div[style*="display: flex; gap: 8px"] {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    }
+</style>
+{% endif %}

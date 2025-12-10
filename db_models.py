@@ -28,6 +28,7 @@ class UserModel(Base):
     role = Column(String(50), nullable=False)  # admin, customer, crew, mechanic
     related_id = Column(String(50))  # Links to customer_id, crew_id, etc.
     email = Column(String(200))
+    apple_user_id = Column(String(255), unique=True, index=True)  # Apple Sign In user identifier
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

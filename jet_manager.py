@@ -5,8 +5,12 @@ Tracks passengers, flights, and maintenance schedules
 
 import json
 import os
+import logging
 from datetime import datetime
 from typing import List, Dict, Optional
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 
 class Customer:
@@ -482,7 +486,7 @@ class JetScheduleManager:
         }
         with open(self.data_file, 'w') as f:
             json.dump(data, f, indent=2)
-        print(f"Data saved to {self.data_file}")
+        logger.info(f"Data saved to {self.data_file}")
 
     def load_data(self):
         """Load data from JSON file"""
@@ -497,7 +501,7 @@ class JetScheduleManager:
             self.jets = {k: PrivateJet.from_dict(v) for k, v in data.get('jets', {}).items()}
             self.flights = {k: Flight.from_dict(v) for k, v in data.get('flights', {}).items()}
             self.maintenance = {k: MaintenanceRecord.from_dict(v) for k, v in data.get('maintenance', {}).items()}
-            print(f"Data loaded from {self.data_file}")
+            logger.info(f"Data loaded from {self.data_file}")
 
     # User Management
     def add_user(self, user_id: str, username: str, password_hash: str, role: str,
@@ -507,17 +511,17 @@ class JetScheduleManager:
             user_id = self.generate_user_id()
 
         if user_id in self.users:
-            print(f"Error: User ID {user_id} already exists")
+            logger.error(f"User ID {user_id} already exists")
             return ""
 
         # Check if username already exists
         if any(u.username == username for u in self.users.values()):
-            print(f"Error: Username {username} already exists")
+            logger.error(f"Username {username} already exists")
             return ""
 
         user = User(user_id, username, password_hash, role, related_id, email)
         self.users[user_id] = user
-        print(f"User {username} added successfully with ID: {user_id}")
+        logger.info(f"User {username} added successfully with ID: {user_id}")
         return user_id
 
     def get_user(self, user_id: str) -> Optional[User]:
@@ -535,21 +539,21 @@ class JetScheduleManager:
                    related_id: str = "", email: str = "") -> bool:
         """Update an existing user"""
         if user_id not in self.users:
-            print(f"Error: User ID {user_id} not found")
+            logger.error(f"User ID {user_id} not found")
             return False
 
         self.users[user_id] = User(user_id, username, password_hash, role, related_id, email)
-        print(f"User {user_id} updated successfully")
+        logger.info(f"User {user_id} updated successfully")
         return True
 
     def delete_user(self, user_id: str) -> bool:
         """Delete a user"""
         if user_id not in self.users:
-            print(f"Error: User ID {user_id} not found")
+            logger.error(f"User ID {user_id} not found")
             return False
 
         del self.users[user_id]
-        print(f"User {user_id} deleted successfully")
+        logger.info(f"User {user_id} deleted successfully")
         return True
 
     # Customer Management
@@ -560,12 +564,12 @@ class JetScheduleManager:
             customer_id = self.generate_customer_id()
 
         if customer_id in self.customers:
-            print(f"Error: Customer ID {customer_id} already exists")
+            logger.error(f"Customer ID {customer_id} already exists")
             return ""
 
         customer = Customer(customer_id, name, company, email, phone, address, lead_pilot_id)
         self.customers[customer_id] = customer
-        print(f"Customer {name} added successfully with ID: {customer_id}")
+        logger.info(f"Customer {name} added successfully with ID: {customer_id}")
         return customer_id
 
     def get_customer(self, customer_id: str) -> Optional[Customer]:
@@ -576,48 +580,44 @@ class JetScheduleManager:
                        email: str, phone: str, address: str, lead_pilot_id: str = "") -> bool:
         """Update an existing customer"""
         if customer_id not in self.customers:
-            print(f"Error: Customer ID {customer_id} not found")
+            logger.error(f"Customer ID {customer_id} not found")
             return False
 
         self.customers[customer_id] = Customer(customer_id, name, company, email, phone, address, lead_pilot_id)
-        print(f"Customer {customer_id} updated successfully")
+        logger.info(f"Customer {customer_id} updated successfully")
         return True
 
     def delete_customer(self, customer_id: str) -> bool:
         """Delete a customer"""
         if customer_id not in self.customers:
-            print(f"Error: Customer ID {customer_id} not found")
+            logger.error(f"Customer ID {customer_id} not found")
             return False
 
         # Check if customer has jets
         customer_jets = [j for j in self.jets.values() if j.customer_id == customer_id]
         if customer_jets:
-            print(f"Warning: Customer {customer_id} has {len(customer_jets)} jet(s)")
-            print(f"  Jet IDs: {', '.join([j.jet_id for j in customer_jets])}")
+            logger.warning(f"Customer {customer_id} has {len(customer_jets)} jet(s): {', '.join([j.jet_id for j in customer_jets])}")
             return False
 
         # Check if customer has passengers
         customer_passengers = [p for p in self.passengers.values() if p.customer_id == customer_id]
         if customer_passengers:
-            print(f"Warning: Customer {customer_id} has {len(customer_passengers)} passenger(s)")
+            logger.warning(f"Customer {customer_id} has {len(customer_passengers)} passenger(s)")
             return False
 
         del self.customers[customer_id]
-        print(f"Customer {customer_id} deleted successfully")
+        logger.info(f"Customer {customer_id} deleted successfully")
         return True
 
     def list_customers(self):
-        """List all customers"""
+        """List all customers (for CLI usage)"""
         if not self.customers:
-            print("No customers registered")
+            logger.info("No customers registered")
             return
 
-        print(f"\n{'='*60}")
-        print(f"REGISTERED CUSTOMERS ({len(self.customers)})")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}\nREGISTERED CUSTOMERS ({len(self.customers)})\n{'='*60}")
         for customer in self.customers.values():
-            print(f"\n{customer}")
-            print(f"{'-'*60}")
+            logger.info(f"\n{customer}\n{'-'*60}")
 
     def get_customer_jets(self, customer_id: str) -> List[PrivateJet]:
         """Get all jets owned by a customer"""
@@ -634,14 +634,14 @@ class JetScheduleManager:
             passenger_id = self.generate_passenger_id()
 
         if passenger_id in self.passengers:
-            print(f"Error: Passenger ID {passenger_id} already exists")
+            logger.error(f"Passenger ID {passenger_id} already exists")
             return ""
 
         passenger = Passenger(passenger_id, name, passport_number,
                             nationality, passport_expiry, contact, customer_id,
                             date_of_birth, gender, passport_country, middle_name)
         self.passengers[passenger_id] = passenger
-        print(f"Passenger {name} added successfully with ID: {passenger_id}")
+        logger.info(f"Passenger {name} added successfully with ID: {passenger_id}")
         return passenger_id
 
     def get_passenger(self, passenger_id: str) -> Optional[Passenger]:
@@ -654,44 +654,40 @@ class JetScheduleManager:
                         middle_name: str = "") -> bool:
         """Update an existing passenger with APIS-compliant fields"""
         if passenger_id not in self.passengers:
-            print(f"Error: Passenger ID {passenger_id} not found")
+            logger.error(f"Passenger ID {passenger_id} not found")
             return False
 
         self.passengers[passenger_id] = Passenger(passenger_id, name, passport_number,
                                                   nationality, passport_expiry, contact, customer_id,
                                                   date_of_birth, gender, passport_country, middle_name)
-        print(f"Passenger {passenger_id} updated successfully")
+        logger.info(f"Passenger {passenger_id} updated successfully")
         return True
 
     def delete_passenger(self, passenger_id: str) -> bool:
         """Delete a passenger"""
         if passenger_id not in self.passengers:
-            print(f"Error: Passenger ID {passenger_id} not found")
+            logger.error(f"Passenger ID {passenger_id} not found")
             return False
 
         # Check if passenger is assigned to any flights
         assigned_flights = [f for f in self.flights.values() if passenger_id in f.passenger_ids]
         if assigned_flights:
-            print(f"Warning: Passenger {passenger_id} is assigned to {len(assigned_flights)} flight(s)")
-            print(f"  Flight IDs: {', '.join([f.flight_id for f in assigned_flights])}")
+            logger.warning(f"Passenger {passenger_id} is assigned to {len(assigned_flights)} flight(s): {', '.join([f.flight_id for f in assigned_flights])}")
             return False
 
         del self.passengers[passenger_id]
-        print(f"Passenger {passenger_id} deleted successfully")
+        logger.info(f"Passenger {passenger_id} deleted successfully")
         return True
 
     def list_passengers(self):
-        """List all passengers"""
+        """List all passengers (for CLI usage)"""
         if not self.passengers:
-            print("No passengers registered")
+            logger.info("No passengers registered")
             return
 
-        print(f"\n{'='*60}")
-        print(f"REGISTERED PASSENGERS ({len(self.passengers)})")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}\nREGISTERED PASSENGERS ({len(self.passengers)})\n{'='*60}")
         for passenger in self.passengers.values():
-            print(f"\n{passenger}")
-            print(f"{'-'*60}")
+            logger.info(f"\n{passenger}\n{'-'*60}")
 
     # Crew Management
     def add_crew(self, crew_id: str, name: str, crew_type: str, passport_number: str,
@@ -703,18 +699,18 @@ class JetScheduleManager:
             crew_id = self.generate_crew_id()
 
         if crew_id in self.crew:
-            print(f"Error: Crew ID {crew_id} already exists")
+            logger.error(f"Crew ID {crew_id} already exists")
             return ""
 
         # Validate pilot has license number
         if crew_type == "Pilot" and not license_number:
-            print(f"Error: Pilots must have a license number")
+            logger.error(f"Pilots must have a license number")
             return ""
 
         crew_member = CrewMember(crew_id, name, crew_type, passport_number,
                                 nationality, passport_expiry, contact, license_number)
         self.crew[crew_id] = crew_member
-        print(f"Crew member {name} ({crew_type}) added successfully with ID: {crew_id}")
+        logger.info(f"Crew member {name} ({crew_type}) added successfully with ID: {crew_id}")
         return crew_id
 
     def get_crew(self, crew_id: str) -> Optional[CrewMember]:
@@ -726,34 +722,34 @@ class JetScheduleManager:
                    license_number: Optional[str] = None) -> bool:
         """Update an existing crew member"""
         if crew_id not in self.crew:
-            print(f"Error: Crew ID {crew_id} not found")
+            logger.error(f"Crew ID {crew_id} not found")
             return False
 
         # Validate pilot has license number
         if crew_type == "Pilot" and not license_number:
-            print(f"Error: Pilots must have a license number")
+            logger.error(f"Pilots must have a license number")
             return False
 
         self.crew[crew_id] = CrewMember(crew_id, name, crew_type, passport_number,
                                        nationality, passport_expiry, contact, license_number)
-        print(f"Crew member {crew_id} updated successfully")
+        logger.info(f"Crew member {crew_id} updated successfully")
         return True
 
     def delete_crew(self, crew_id: str) -> bool:
         """Delete a crew member"""
         if crew_id not in self.crew:
-            print(f"Error: Crew ID {crew_id} not found")
+            logger.error(f"Crew ID {crew_id} not found")
             return False
 
         # Check if crew member is assigned to any flights
         assigned_flights = [f for f in self.flights.values() if crew_id in f.crew_ids]
         if assigned_flights:
-            print(f"Warning: Crew member {crew_id} is assigned to {len(assigned_flights)} flight(s)")
-            print(f"  Flight IDs: {', '.join([f.flight_id for f in assigned_flights])}")
+            logger.warning(f"Crew member {crew_id} is assigned to {len(assigned_flights)} flight(s)")
+            logger.info(f"  Flight IDs: {', '.join([f.flight_id for f in assigned_flights])}")
             return False
 
         del self.crew[crew_id]
-        print(f"Crew member {crew_id} deleted successfully")
+        logger.info(f"Crew member {crew_id} deleted successfully")
         return True
 
     def list_crew(self, crew_type_filter: Optional[str] = None):
@@ -764,15 +760,15 @@ class JetScheduleManager:
             crew_list = [c for c in crew_list if c.crew_type == crew_type_filter]
 
         if not crew_list:
-            print(f"No crew members found{' of type: ' + crew_type_filter if crew_type_filter else ''}")
+            logger.info(f"No crew members found{' of type: ' + crew_type_filter if crew_type_filter else ''}")
             return
 
-        print(f"\n{'='*60}")
-        print(f"CREW MEMBERS ({len(crew_list)}){' - ' + crew_type_filter if crew_type_filter else ''}")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"CREW MEMBERS ({len(crew_list)}){' - ' + crew_type_filter if crew_type_filter else ''}")
+        logger.info(f"{'='*60}")
         for crew_member in crew_list:
-            print(f"\n{crew_member}")
-            print(f"{'-'*60}")
+            logger.info(f"\n{crew_member}")
+            logger.info(f"{'-'*60}")
 
     # Jet Management
     def add_jet(self, jet_id: str, model: str, tail_number: str,
@@ -783,17 +779,17 @@ class JetScheduleManager:
             jet_id = self.generate_jet_id()
 
         if jet_id in self.jets:
-            print(f"Error: Jet ID {jet_id} already exists")
+            logger.error(f"Jet ID {jet_id} already exists")
             return ""
 
         # Validate customer exists
         if customer_id and customer_id not in self.customers:
-            print(f"Error: Customer ID {customer_id} not found")
+            logger.error(f"Customer ID {customer_id} not found")
             return ""
 
         jet = PrivateJet(jet_id, model, tail_number, capacity, customer_id, status)
         self.jets[jet_id] = jet
-        print(f"Jet {model} added successfully with ID: {jet_id}")
+        logger.info(f"Jet {model} added successfully with ID: {jet_id}")
         return jet_id
 
     def get_jet(self, jet_id: str) -> Optional[PrivateJet]:
@@ -803,37 +799,37 @@ class JetScheduleManager:
     def list_jets(self):
         """List all jets"""
         if not self.jets:
-            print("No jets registered")
+            logger.info("No jets registered")
             return
 
-        print(f"\n{'='*60}")
-        print(f"REGISTERED JETS ({len(self.jets)})")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"REGISTERED JETS ({len(self.jets)})")
+        logger.info(f"{'='*60}")
         for jet in self.jets.values():
-            print(f"\n{jet}")
-            print(f"{'-'*60}")
+            logger.info(f"\n{jet}")
+            logger.info(f"{'-'*60}")
 
     # Jet Management (continued)
     def update_jet(self, jet_id: str, model: str, tail_number: str,
                   capacity: int, customer_id: str, status: str) -> bool:
         """Update an existing jet"""
         if jet_id not in self.jets:
-            print(f"Error: Jet ID {jet_id} not found")
+            logger.error(f"Jet ID {jet_id} not found")
             return False
 
         # Validate customer exists
         if customer_id and customer_id not in self.customers:
-            print(f"Error: Customer ID {customer_id} not found")
+            logger.error(f"Customer ID {customer_id} not found")
             return False
 
         self.jets[jet_id] = PrivateJet(jet_id, model, tail_number, capacity, customer_id, status)
-        print(f"Jet {jet_id} updated successfully")
+        logger.info(f"Jet {jet_id} updated successfully")
         return True
 
     def delete_jet(self, jet_id: str) -> bool:
         """Delete a jet"""
         if jet_id not in self.jets:
-            print(f"Error: Jet ID {jet_id} not found")
+            logger.error(f"Jet ID {jet_id} not found")
             return False
 
         # Check if jet is assigned to any flights or maintenance
@@ -841,11 +837,11 @@ class JetScheduleManager:
         assigned_maintenance = [m for m in self.maintenance.values() if m.jet_id == jet_id]
 
         if assigned_flights or assigned_maintenance:
-            print(f"Warning: Jet {jet_id} has {len(assigned_flights)} flight(s) and {len(assigned_maintenance)} maintenance record(s)")
+            logger.warning(f"Jet {jet_id} has {len(assigned_flights)} flight(s) and {len(assigned_maintenance)} maintenance record(s)")
             return False
 
         del self.jets[jet_id]
-        print(f"Jet {jet_id} deleted successfully")
+        logger.info(f"Jet {jet_id} deleted successfully")
         return True
 
     # Flight Management
@@ -859,28 +855,28 @@ class JetScheduleManager:
             flight_id = self.generate_flight_id()
 
         if flight_id in self.flights:
-            print(f"Error: Flight ID {flight_id} already exists")
+            logger.error(f"Flight ID {flight_id} already exists")
             return ""
 
         if jet_id not in self.jets:
-            print(f"Error: Jet ID {jet_id} not found")
+            logger.error(f"Jet ID {jet_id} not found")
             return ""
 
         # Require at least one crew member
         if not crew_ids or len(crew_ids) == 0:
-            print(f"Error: Flight must have at least one crew member")
+            logger.error(f"Flight must have at least one crew member")
             return ""
 
         # Verify all crew members exist
         for cid in crew_ids:
             if cid not in self.crew:
-                print(f"Error: Crew ID {cid} not found")
+                logger.error(f"Crew ID {cid} not found")
                 return ""
 
         # Check for at least one pilot
         crew_types = [self.crew[cid].crew_type for cid in crew_ids]
         if "Pilot" not in crew_types:
-            print(f"Error: Flight must have at least one pilot")
+            logger.error(f"Flight must have at least one pilot")
             return ""
 
         jet = self.jets[jet_id]
@@ -892,8 +888,8 @@ class JetScheduleManager:
                 if m.jet_id == jet_id and m.status == "In Progress"
             ]
             if active_maintenance:
-                print(f"Warning: Jet {jet_id} is currently in maintenance")
-                print(f"  Active maintenance: {', '.join([m.maintenance_id for m in active_maintenance])}")
+                logger.warning(f"Jet {jet_id} is currently in maintenance")
+                logger.info(f"  Active maintenance: {', '.join([m.maintenance_id for m in active_maintenance])}")
 
         if jet.status == "In Flight":
             active_flights = [
@@ -901,16 +897,16 @@ class JetScheduleManager:
                 if f.jet_id == jet_id and f.status == "In Progress"
             ]
             if active_flights:
-                print(f"Warning: Jet {jet_id} is currently in flight")
-                print(f"  Active flights: {', '.join([f.flight_id for f in active_flights])}")
+                logger.warning(f"Jet {jet_id} is currently in flight")
+                logger.info(f"  Active flights: {', '.join([f.flight_id for f in active_flights])}")
 
         if len(passenger_ids) > jet.capacity:
-            print(f"Error: Too many passengers ({len(passenger_ids)}) for jet capacity ({jet.capacity})")
+            logger.error(f"Too many passengers ({len(passenger_ids)}) for jet capacity ({jet.capacity})")
             return ""
 
         for pid in passenger_ids:
             if pid not in self.passengers:
-                print(f"Error: Passenger ID {pid} not found")
+                logger.error(f"Passenger ID {pid} not found")
                 return ""
 
         flight = Flight(flight_id, jet_id, departure, destination,
@@ -919,9 +915,9 @@ class JetScheduleManager:
         self.flights[flight_id] = flight
 
         if approval_status == "Pending":
-            print(f"Flight {flight_id} created and pending approval")
+            logger.info(f"Flight {flight_id} created and pending approval")
         else:
-            print(f"Flight {flight_id} scheduled successfully with {len(crew_ids)} crew member(s)")
+            logger.info(f"Flight {flight_id} scheduled successfully with {len(crew_ids)} crew member(s)")
         return flight_id
 
     def update_flight(self, flight_id: str, jet_id: str, departure: str,
@@ -929,55 +925,55 @@ class JetScheduleManager:
                      passenger_ids: List[str], crew_ids: List[str], status: str) -> bool:
         """Update an existing flight"""
         if flight_id not in self.flights:
-            print(f"Error: Flight ID {flight_id} not found")
+            logger.error(f"Flight ID {flight_id} not found")
             return False
 
         # Require at least one crew member
         if not crew_ids or len(crew_ids) == 0:
-            print(f"Error: Flight must have at least one crew member")
+            logger.error(f"Flight must have at least one crew member")
             return False
 
         # Check for at least one pilot
         crew_types = [self.crew[cid].crew_type for cid in crew_ids if cid in self.crew]
         if "Pilot" not in crew_types:
-            print(f"Error: Flight must have at least one pilot")
+            logger.error(f"Flight must have at least one pilot")
             return False
 
         self.flights[flight_id] = Flight(flight_id, jet_id, departure, destination,
                                         departure_time, arrival_time, passenger_ids, crew_ids, status)
-        print(f"Flight {flight_id} updated successfully")
+        logger.info(f"Flight {flight_id} updated successfully")
         return True
 
     def delete_flight(self, flight_id: str) -> bool:
         """Delete a flight"""
         if flight_id not in self.flights:
-            print(f"Error: Flight ID {flight_id} not found")
+            logger.error(f"Flight ID {flight_id} not found")
             return False
 
         del self.flights[flight_id]
-        print(f"Flight {flight_id} deleted successfully")
+        logger.info(f"Flight {flight_id} deleted successfully")
         return True
 
     def approve_flight(self, flight_id: str, approved_by: str) -> bool:
         """Approve a pending flight"""
         if flight_id not in self.flights:
-            print(f"Error: Flight ID {flight_id} not found")
+            logger.error(f"Flight ID {flight_id} not found")
             return False
 
         flight = self.flights[flight_id]
 
         if flight.approval_status == "Approved":
-            print(f"Flight {flight_id} is already approved")
+            logger.info(f"Flight {flight_id} is already approved")
             return False
 
         # Verify approver is a pilot
         if approved_by not in self.crew:
-            print(f"Error: Crew ID {approved_by} not found")
+            logger.error(f"Crew ID {approved_by} not found")
             return False
 
         approver = self.crew[approved_by]
         if approver.crew_type != "Pilot":
-            print(f"Error: Only pilots can approve flights")
+            logger.error(f"Only pilots can approve flights")
             return False
 
         # Approve the flight
@@ -985,25 +981,25 @@ class JetScheduleManager:
         flight.approved_by = approved_by
         flight.approval_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        print(f"Flight {flight_id} approved by {approver.name}")
+        logger.info(f"Flight {flight_id} approved by {approver.name}")
         return True
 
     def reject_flight(self, flight_id: str, rejected_by: str) -> bool:
         """Reject a pending flight"""
         if flight_id not in self.flights:
-            print(f"Error: Flight ID {flight_id} not found")
+            logger.error(f"Flight ID {flight_id} not found")
             return False
 
         flight = self.flights[flight_id]
 
         # Verify rejector is a pilot
         if rejected_by not in self.crew:
-            print(f"Error: Crew ID {rejected_by} not found")
+            logger.error(f"Crew ID {rejected_by} not found")
             return False
 
         rejector = self.crew[rejected_by]
         if rejector.crew_type != "Pilot":
-            print(f"Error: Only pilots can reject flights")
+            logger.error(f"Only pilots can reject flights")
             return False
 
         # Reject the flight
@@ -1011,7 +1007,7 @@ class JetScheduleManager:
         flight.approved_by = rejected_by
         flight.approval_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        print(f"Flight {flight_id} rejected by {rejector.name}")
+        logger.info(f"Flight {flight_id} rejected by {rejector.name}")
         return True
 
     def get_pending_approvals(self, pilot_crew_id: str = None) -> List[Flight]:
@@ -1047,20 +1043,20 @@ class JetScheduleManager:
             flights = [f for f in flights if f.status == status_filter]
 
         if not flights:
-            print(f"No flights found{' with status: ' + status_filter if status_filter else ''}")
+            logger.info(f"No flights found{' with status: ' + status_filter if status_filter else ''}")
             return
 
-        print(f"\n{'='*60}")
-        print(f"FLIGHTS ({len(flights)}){' - ' + status_filter if status_filter else ''}")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"FLIGHTS ({len(flights)}){' - ' + status_filter if status_filter else ''}")
+        logger.info(f"{'='*60}")
         for flight in flights:
-            print(f"\n{flight}")
-            print(f"{'-'*60}")
+            logger.info(f"\n{flight}")
+            logger.info(f"{'-'*60}")
 
     def update_flight_status(self, flight_id: str, new_status: str) -> bool:
         """Update flight status and synchronize jet status"""
         if flight_id not in self.flights:
-            print(f"Error: Flight ID {flight_id} not found")
+            logger.error(f"Flight ID {flight_id} not found")
             return False
 
         flight = self.flights[flight_id]
@@ -1077,8 +1073,8 @@ class JetScheduleManager:
             if new_status == "In Progress":
                 # Flight is active - set jet to In Flight
                 jet.status = "In Flight"
-                print(f"Flight {flight_id} status updated to {new_status}")
-                print(f"→ Jet {jet_id} status automatically updated to 'In Flight'")
+                logger.info(f"Flight {flight_id} status updated to {new_status}")
+                logger.info(f"→ Jet {jet_id} status automatically updated to 'In Flight'")
 
             elif new_status in ["Completed", "Cancelled"]:
                 # Flight ended - check if there are other active flights for this jet
@@ -1096,25 +1092,25 @@ class JetScheduleManager:
 
                     if active_maintenance:
                         jet.status = "Maintenance"
-                        print(f"Flight {flight_id} status updated to {new_status}")
-                        print(f"→ Jet {jet_id} has active maintenance, status remains 'Maintenance'")
+                        logger.info(f"Flight {flight_id} status updated to {new_status}")
+                        logger.info(f"→ Jet {jet_id} has active maintenance, status remains 'Maintenance'")
                     else:
                         jet.status = "Available"
-                        print(f"Flight {flight_id} status updated to {new_status}")
-                        print(f"→ Jet {jet_id} status automatically updated to 'Available'")
+                        logger.info(f"Flight {flight_id} status updated to {new_status}")
+                        logger.info(f"→ Jet {jet_id} status automatically updated to 'Available'")
                 else:
-                    print(f"Flight {flight_id} status updated to {new_status}")
-                    print(f"→ Jet {jet_id} remains 'In Flight' (other active flights exist)")
+                    logger.info(f"Flight {flight_id} status updated to {new_status}")
+                    logger.info(f"→ Jet {jet_id} remains 'In Flight' (other active flights exist)")
 
             elif new_status == "Scheduled":
                 # Flight is scheduled - only update jet if it's currently available
                 if jet.status == "Available":
-                    print(f"Flight {flight_id} status updated to {new_status}")
-                    print(f"→ Jet {jet_id} remains 'Available' (flight not yet started)")
+                    logger.info(f"Flight {flight_id} status updated to {new_status}")
+                    logger.info(f"→ Jet {jet_id} remains 'Available' (flight not yet started)")
                 else:
-                    print(f"Flight {flight_id} status updated to {new_status}")
+                    logger.info(f"Flight {flight_id} status updated to {new_status}")
         else:
-            print(f"Flight {flight_id} status updated to {new_status}")
+            logger.info(f"Flight {flight_id} status updated to {new_status}")
 
         return True
 
@@ -1128,11 +1124,11 @@ class JetScheduleManager:
             maintenance_id = self.generate_maintenance_id()
 
         if maintenance_id in self.maintenance:
-            print(f"Error: Maintenance ID {maintenance_id} already exists")
+            logger.error(f"Maintenance ID {maintenance_id} already exists")
             return ""
 
         if jet_id not in self.jets:
-            print(f"Error: Jet ID {jet_id} not found")
+            logger.error(f"Jet ID {jet_id} not found")
             return ""
 
         jet = self.jets[jet_id]
@@ -1144,8 +1140,8 @@ class JetScheduleManager:
                 if f.jet_id == jet_id and f.status == "In Progress"
             ]
             if active_flights:
-                print(f"Warning: Jet {jet_id} is currently in flight")
-                print(f"  Active flights: {', '.join([f.flight_id for f in active_flights])}")
+                logger.warning(f"Jet {jet_id} is currently in flight")
+                logger.info(f"  Active flights: {', '.join([f.flight_id for f in active_flights])}")
 
         if jet.status == "Maintenance":
             active_maintenance = [
@@ -1153,13 +1149,13 @@ class JetScheduleManager:
                 if m.jet_id == jet_id and m.status == "In Progress"
             ]
             if active_maintenance:
-                print(f"Warning: Jet {jet_id} already has maintenance in progress")
-                print(f"  Active maintenance: {', '.join([m.maintenance_id for m in active_maintenance])}")
+                logger.warning(f"Jet {jet_id} already has maintenance in progress")
+                logger.info(f"  Active maintenance: {', '.join([m.maintenance_id for m in active_maintenance])}")
 
         maintenance = MaintenanceRecord(maintenance_id, jet_id, scheduled_date,
                                        maintenance_type, description)
         self.maintenance[maintenance_id] = maintenance
-        print(f"Maintenance {maintenance_id} scheduled successfully")
+        logger.info(f"Maintenance {maintenance_id} scheduled successfully")
         return maintenance_id
 
     def update_maintenance(self, maintenance_id: str, jet_id: str, scheduled_date: str,
@@ -1167,29 +1163,29 @@ class JetScheduleManager:
                           completed_date: Optional[str] = None) -> bool:
         """Update an existing maintenance record"""
         if maintenance_id not in self.maintenance:
-            print(f"Error: Maintenance ID {maintenance_id} not found")
+            logger.error(f"Maintenance ID {maintenance_id} not found")
             return False
 
         self.maintenance[maintenance_id] = MaintenanceRecord(maintenance_id, jet_id, scheduled_date,
                                                              maintenance_type, description, status, completed_date)
-        print(f"Maintenance {maintenance_id} updated successfully")
+        logger.info(f"Maintenance {maintenance_id} updated successfully")
         return True
 
     def delete_maintenance(self, maintenance_id: str) -> bool:
         """Delete a maintenance record"""
         if maintenance_id not in self.maintenance:
-            print(f"Error: Maintenance ID {maintenance_id} not found")
+            logger.error(f"Maintenance ID {maintenance_id} not found")
             return False
 
         del self.maintenance[maintenance_id]
-        print(f"Maintenance {maintenance_id} deleted successfully")
+        logger.info(f"Maintenance {maintenance_id} deleted successfully")
         return True
 
     def update_maintenance_status(self, maintenance_id: str, new_status: str,
                                   completed_date: Optional[str] = None) -> bool:
         """Update maintenance status and synchronize jet status"""
         if maintenance_id not in self.maintenance:
-            print(f"Error: Maintenance ID {maintenance_id} not found")
+            logger.error(f"Maintenance ID {maintenance_id} not found")
             return False
 
         maintenance = self.maintenance[maintenance_id]
@@ -1208,8 +1204,8 @@ class JetScheduleManager:
             if new_status == "In Progress":
                 # Maintenance started - set jet to Maintenance
                 jet.status = "Maintenance"
-                print(f"Maintenance {maintenance_id} status updated to {new_status}")
-                print(f"→ Jet {jet_id} status automatically updated to 'Maintenance'")
+                logger.info(f"Maintenance {maintenance_id} status updated to {new_status}")
+                logger.info(f"→ Jet {jet_id} status automatically updated to 'Maintenance'")
 
             elif new_status == "Completed":
                 # Maintenance completed - check if there are other active maintenance tasks
@@ -1227,25 +1223,25 @@ class JetScheduleManager:
 
                     if active_flights:
                         jet.status = "In Flight"
-                        print(f"Maintenance {maintenance_id} status updated to {new_status}")
-                        print(f"→ Jet {jet_id} has active flights, status set to 'In Flight'")
+                        logger.info(f"Maintenance {maintenance_id} status updated to {new_status}")
+                        logger.info(f"→ Jet {jet_id} has active flights, status set to 'In Flight'")
                     else:
                         jet.status = "Available"
-                        print(f"Maintenance {maintenance_id} status updated to {new_status}")
-                        print(f"→ Jet {jet_id} status automatically updated to 'Available'")
+                        logger.info(f"Maintenance {maintenance_id} status updated to {new_status}")
+                        logger.info(f"→ Jet {jet_id} status automatically updated to 'Available'")
                 else:
-                    print(f"Maintenance {maintenance_id} status updated to {new_status}")
-                    print(f"→ Jet {jet_id} remains 'Maintenance' (other maintenance tasks active)")
+                    logger.info(f"Maintenance {maintenance_id} status updated to {new_status}")
+                    logger.info(f"→ Jet {jet_id} remains 'Maintenance' (other maintenance tasks active)")
 
             elif new_status == "Scheduled":
                 # Maintenance is scheduled - check current jet status
                 if jet.status == "Available":
-                    print(f"Maintenance {maintenance_id} status updated to {new_status}")
-                    print(f"→ Jet {jet_id} remains 'Available' (maintenance not yet started)")
+                    logger.info(f"Maintenance {maintenance_id} status updated to {new_status}")
+                    logger.info(f"→ Jet {jet_id} remains 'Available' (maintenance not yet started)")
                 else:
-                    print(f"Maintenance {maintenance_id} status updated to {new_status}")
+                    logger.info(f"Maintenance {maintenance_id} status updated to {new_status}")
         else:
-            print(f"Maintenance {maintenance_id} status updated to {new_status}")
+            logger.info(f"Maintenance {maintenance_id} status updated to {new_status}")
 
         return True
 
@@ -1264,49 +1260,49 @@ class JetScheduleManager:
             records = [m for m in records if m.status == status_filter]
 
         if not records:
-            print("No maintenance records found")
+            logger.info("No maintenance records found")
             return
 
-        print(f"\n{'='*60}")
-        print(f"MAINTENANCE RECORDS ({len(records)})")
-        print(f"{'='*60}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"MAINTENANCE RECORDS ({len(records)})")
+        logger.info(f"{'='*60}")
         for record in records:
-            print(f"\n{record}")
-            print(f"{'-'*60}")
+            logger.info(f"\n{record}")
+            logger.info(f"{'-'*60}")
 
     def get_jet_schedule(self, jet_id: str):
         """Get complete schedule for a specific jet including flights and maintenance"""
         if jet_id not in self.jets:
-            print(f"Error: Jet ID {jet_id} not found")
+            logger.error(f"Jet ID {jet_id} not found")
             return
 
         jet = self.jets[jet_id]
-        print(f"\n{'='*60}")
-        print(f"SCHEDULE FOR JET: {jet.model} ({jet_id})")
-        print(f"{'='*60}")
-        print(f"\n{jet}\n")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"SCHEDULE FOR JET: {jet.model} ({jet_id})")
+        logger.info(f"{'='*60}")
+        logger.info(f"\n{jet}\n")
 
         # Flights
         flights = [f for f in self.flights.values() if f.jet_id == jet_id]
-        print(f"\nFLIGHTS ({len(flights)}):")
-        print(f"{'-'*60}")
+        logger.info(f"\nFLIGHTS ({len(flights)}):")
+        logger.info(f"{'-'*60}")
         if flights:
             for flight in flights:
-                print(f"\n{flight}")
+                logger.info(f"\n{flight}")
         else:
-            print("No flights scheduled")
+            logger.info("No flights scheduled")
 
         # Maintenance
         maintenance = [m for m in self.maintenance.values() if m.jet_id == jet_id]
-        print(f"\n\nMAINTENANCE ({len(maintenance)}):")
-        print(f"{'-'*60}")
+        logger.info(f"\n\nMAINTENANCE ({len(maintenance)}):")
+        logger.info(f"{'-'*60}")
         if maintenance:
             for record in maintenance:
-                print(f"\n{record}")
+                logger.info(f"\n{record}")
         else:
-            print("No maintenance scheduled")
+            logger.info("No maintenance scheduled")
 
 
 if __name__ == "__main__":
-    print("Private Jet Schedule Management System")
-    print("This is the core module. Use jet_manager_cli.py for interactive management.")
+    logger.info("Private Jet Schedule Management System")
+    logger.info("This is the core module. Use jet_manager_cli.py for interactive management.")
